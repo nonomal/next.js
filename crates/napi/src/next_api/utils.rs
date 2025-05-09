@@ -11,8 +11,8 @@ use serde::Serialize;
 use tokio::sync::mpsc::Receiver;
 use turbo_tasks::{
     Effects, OperationVc, ReadRef, TaskId, TryJoinIterExt, TurboTasks, TurboTasksApi, UpdateInfo,
-    Vc, VcValueType, get_effects, message_queue::CompilationEvent,
-    task_statistics::TaskStatisticsApi, trace::TraceRawVcs,
+    Vc, VcValueType, backend::TurboTasksExecutionError, get_effects,
+    message_queue::CompilationEvent, task_statistics::TaskStatisticsApi, trace::TraceRawVcs,
 };
 use turbo_tasks_backend::{
     DefaultBackingStorage, GitVersionInfo, NoopBackingStorage, default_backing_storage,
@@ -491,6 +491,19 @@ pub fn subscribe<T: 'static + Send + Sync, F: Future<Output = Result<T>> + Send,
 
             let status = func.call(
                 result.map_err(|e| {
+                    if let Some(err) = e
+                        .root_cause()
+                        .downcast_ref::<Arc<TurboTasksExecutionError>>()
+                    {
+                        if let TurboTasksExecutionError::Panic(panic) = err.as_ref() {
+                            if let Ok(mut error_location) =
+                                crate::next_api::LAST_ERROR_LOCATION.lock()
+                            {
+                                *error_location = panic.location.clone()
+                            }
+                        }
+                    }
+
                     log_internal_error_and_inform(&e);
                     napi::Error::from_reason(PrettyPrintError(&e).to_string())
                 }),

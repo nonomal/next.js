@@ -510,7 +510,10 @@ function bindingToApi(
     try {
       return await fn()
     } catch (nativeError: any) {
-      throw TurbopackInternalError.createAndRecordTelemetry(nativeError)
+      throw TurbopackInternalError.createAndRecordTelemetry(
+        nativeError,
+        binding.getLastTurbopackErrorLocation() ?? undefined
+      )
     }
   }
 
@@ -578,7 +581,10 @@ function bindingToApi(
       } catch (e) {
         if (e === cancel) return
         if (e instanceof Error) {
-          throw TurbopackInternalError.createAndRecordTelemetry(e)
+          throw TurbopackInternalError.createAndRecordTelemetry(
+            e,
+            binding.getLastTurbopackErrorLocation() ?? undefined
+          )
         }
         throw e
       } finally {
