@@ -22,21 +22,26 @@ describe('app dir - Metadata API on the Edge runtime', () => {
           (file) => {
             return next
               .readFileSync(path.join('.next', file))
-              .includes('ImageResponse')
+              .includes('loadAdditionalAsset')
           }
         )
+        expect(pageFilesThatHaveImageResponse).not.toBeEmpty()
 
         const uniqueAnotherFiles = [
           ...new Set<string>(
             middlewareManifest.functions['/another/page'].files
           ),
         ]
+        expect(uniqueAnotherFiles).not.toBeEmpty()
 
         const anotherFilesThatHaveImageResponse = uniqueAnotherFiles.filter(
           (file) => {
-            return next
-              .readFileSync(path.join('.next', file))
-              .includes('ImageResponse')
+            return (
+              next
+                .readFileSync(path.join('.next', file))
+                // It checks if the `@vercel/og` package is shared between the two routes.
+                .includes('loadAdditionalAsset')
+            )
           }
         )
 
@@ -52,7 +57,9 @@ describe('app dir - Metadata API on the Edge runtime', () => {
   it('should render OpenGraph image meta tag correctly', async () => {
     const html$ = await next.render$('/')
     const ogUrl = new URL(html$('meta[property="og:image"]').attr('content'))
-    const imageBuffer = await (await next.fetch(ogUrl.pathname)).buffer()
+    const imageBuffer = Buffer.from(
+      await (await next.fetch(ogUrl.pathname)).arrayBuffer()
+    )
 
     const size = imageSize(imageBuffer)
     expect([size.width, size.height]).toEqual([1200, 630])

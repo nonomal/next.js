@@ -44,12 +44,10 @@
             ),
         ],
         span: 16..43,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "global",
-        ),
+        var: "global",
         ast_path: [
             Program(
                 Script,
@@ -90,12 +88,9 @@
             ),
         ],
         span: 16..22,
-        in_try: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -133,7 +128,6 @@
             ),
         ],
         span: 123..130,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -193,9 +187,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -233,7 +225,6 @@
             ),
         ],
         span: 199..206,
-        in_try: false,
     },
     Call {
         func: FreeVar(

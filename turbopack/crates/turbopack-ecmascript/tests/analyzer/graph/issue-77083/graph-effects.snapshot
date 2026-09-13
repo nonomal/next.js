@@ -37,7 +37,7 @@
                             Function(
                                 Body,
                             ),
-                            BlockStmt(
+                            FunctionBody(
                                 Stmts(
                                     0,
                                 ),
@@ -76,7 +76,6 @@
                             ),
                         ],
                         span: 108..114,
-                        in_try: false,
                     },
                     Call {
                         func: Member(
@@ -84,9 +83,13 @@
                             Module(
                                 ModuleValue {
                                     module: "./assert",
-                                    annotations: ImportAnnotations {
-                                        map: {},
-                                    },
+                                    annotations: None,
+                                    analyze_for_constants: false,
+                                    reference: Some(
+                                        ModuleReferenceIndex(
+                                            2,
+                                        ),
+                                    ),
                                 },
                             ),
                             Constant(
@@ -141,7 +144,7 @@
                             Function(
                                 Body,
                             ),
-                            BlockStmt(
+                            FunctionBody(
                                 Stmts(
                                     0,
                                 ),
@@ -199,7 +202,7 @@
                             Function(
                                 Body,
                             ),
-                            BlockStmt(
+                            FunctionBody(
                                 Stmts(
                                     0,
                                 ),
@@ -249,7 +252,7 @@
                         Function(
                             Body,
                         ),
-                        BlockStmt(
+                        FunctionBody(
                             Stmts(
                                 0,
                             ),
@@ -288,7 +291,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -298,7 +301,6 @@
             ),
         ],
         span: 91..192,
-        in_try: false,
     },
     ImportedBinding {
         esm_reference_index: 1,
@@ -329,7 +331,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -362,7 +364,6 @@
             ),
         ],
         span: 201..207,
-        in_try: false,
     },
     Call {
         func: Member(
@@ -370,9 +371,13 @@
             Module(
                 ModuleValue {
                     module: "./assert",
-                    annotations: ImportAnnotations {
-                        map: {},
-                    },
+                    annotations: None,
+                    analyze_for_constants: false,
+                    reference: Some(
+                        ModuleReferenceIndex(
+                            2,
+                        ),
+                    ),
                 },
             ),
             Constant(
@@ -427,7 +432,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -483,7 +488,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -508,7 +513,6 @@
             ),
         ],
         span: 222..228,
-        in_try: false,
     },
     Call {
         func: Member(
@@ -516,9 +520,13 @@
             Module(
                 ModuleValue {
                     module: "./assert",
-                    annotations: ImportAnnotations {
-                        map: {},
-                    },
+                    annotations: None,
+                    analyze_for_constants: false,
+                    reference: Some(
+                        ModuleReferenceIndex(
+                            2,
+                        ),
+                    ),
                 },
             ),
             Constant(
@@ -573,7 +581,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -617,7 +625,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),

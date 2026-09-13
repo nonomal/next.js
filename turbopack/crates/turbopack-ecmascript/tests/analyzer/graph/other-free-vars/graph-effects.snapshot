@@ -1,8 +1,6 @@
 [
     FreeVar {
-        var: FreeVar(
-            "Object",
-        ),
+        var: "Object",
         ast_path: [
             Program(
                 Script,
@@ -31,7 +29,6 @@
             ),
         ],
         span: 11..17,
-        in_try: false,
     },
     Member {
         obj: FreeVar(
@@ -81,12 +78,10 @@
             ),
         ],
         span: 30..41,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "Object",
-        ),
+        var: "Object",
         ast_path: [
             Program(
                 Script,
@@ -130,7 +125,6 @@
             ),
         ],
         span: 30..36,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -235,12 +229,10 @@
             ),
         ],
         span: 56..62,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "Object",
-        ),
+        var: "Object",
         ast_path: [
             Program(
                 Script,
@@ -280,7 +272,6 @@
             ),
         ],
         span: 63..69,
-        in_try: false,
     },
     MemberCall {
         obj: Variable(

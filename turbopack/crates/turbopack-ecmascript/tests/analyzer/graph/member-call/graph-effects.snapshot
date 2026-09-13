@@ -41,7 +41,7 @@
             ),
         ],
         span: 35..43,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -94,7 +94,7 @@
             ),
         ],
         span: 70..82,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -307,7 +307,7 @@
             ),
         ],
         span: 139..160,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Array {
@@ -393,12 +393,10 @@
             ),
         ],
         span: 139..153,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "unknown",
-        ),
+        var: "unknown",
         ast_path: [
             Program(
                 Script,
@@ -449,7 +447,6 @@
             ),
         ],
         span: 171..178,
-        in_try: false,
     },
     MemberCall {
         obj: Member(
@@ -655,7 +652,7 @@
             ),
         ],
         span: 200..221,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Array {
@@ -741,12 +738,10 @@
             ),
         ],
         span: 200..214,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "unknown",
-        ),
+        var: "unknown",
         ast_path: [
             Program(
                 Script,
@@ -786,7 +781,6 @@
             ),
         ],
         span: 231..238,
-        in_try: false,
     },
     MemberCall {
         obj: Member(
@@ -946,7 +940,7 @@
             ),
         ],
         span: 304..313,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -999,7 +993,7 @@
             ),
         ],
         span: 348..360,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(

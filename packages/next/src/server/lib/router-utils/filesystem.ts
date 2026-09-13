@@ -1,14 +1,17 @@
 import type {
   FunctionsConfigManifest,
   ManifestRoute,
-  PrerenderManifest,
+  PreviewPropsManifest,
   RoutesManifest,
 } from '../../../build'
-import type { NextConfigComplete } from '../../config-shared'
+import type { NextConfigRuntime } from '../../config-shared'
 import type { MiddlewareManifest } from '../../../build/webpack/plugins/middleware-plugin'
 import type { UnwrapPromise } from '../../../lib/coalesced-function'
 import type { PatchMatcher } from '../../../shared/lib/router/utils/path-match'
 import type { MiddlewareRouteMatch } from '../../../shared/lib/router/utils/middleware-route-matcher'
+import type { __ApiPreviewProps } from '../../api-utils'
+import type { Params } from '../../request/params'
+import type { RouteDefinition } from '../../route-definitions/route-definition'
 
 import path from 'path'
 import fs from 'fs/promises'
@@ -17,31 +20,49 @@ import setupDebug from 'next/dist/compiled/debug'
 import { LRUCache } from '../lru-cache'
 import loadCustomRoutes, { type Rewrite } from '../../../lib/load-custom-routes'
 import { modifyRouteRegex } from '../../../lib/redirect-status'
+import { isAPIRoute } from '../../../lib/is-api-route'
+import { isAppPageRoute } from '../../../lib/is-app-page-route'
+import { isAppRouteRoute } from '../../../lib/is-app-route-route'
 import { FileType, fileExists } from '../../../lib/file-exists'
 import { recursiveReadDir } from '../../../lib/recursive-readdir'
-import { isDynamicRoute } from '../../../shared/lib/router/utils'
-import { escapeStringRegexp } from '../../../shared/lib/escape-regexp'
+import { addLocalePrefixToDataRouteRegex } from './build-data-route'
+import {
+  getSortedRoutes,
+  isDynamicRoute,
+} from '../../../shared/lib/router/utils'
 import { getPathMatch } from '../../../shared/lib/router/utils/path-match'
-import { getRouteRegex } from '../../../shared/lib/router/utils/route-regex'
+import {
+  getNamedRouteRegex,
+  getRouteRegex,
+} from '../../../shared/lib/router/utils/route-regex'
 import { getRouteMatcher } from '../../../shared/lib/router/utils/route-matcher'
 import { pathHasPrefix } from '../../../shared/lib/router/utils/path-has-prefix'
 import { normalizeLocalePath } from '../../../shared/lib/i18n/normalize-locale-path'
 import { removePathPrefix } from '../../../shared/lib/router/utils/remove-path-prefix'
 import { getMiddlewareRouteMatcher } from '../../../shared/lib/router/utils/middleware-route-matcher'
+import { PageNotFoundError } from '../../../shared/lib/utils'
 import {
   APP_PATH_ROUTES_MANIFEST,
+  APP_PATHS_MANIFEST,
+  BLOCKED_PAGES,
   BUILD_ID_FILE,
   FUNCTIONS_CONFIG_MANIFEST,
   MIDDLEWARE_MANIFEST,
   PAGES_MANIFEST,
-  PRERENDER_MANIFEST,
+  PREVIEW_PROPS_MANIFEST,
   ROUTES_MANIFEST,
 } from '../../../shared/lib/constants'
 import { normalizePathSep } from '../../../shared/lib/page-path/normalize-path-sep'
 import { normalizeMetadataRoute } from '../../../lib/metadata/get-metadata-route'
 import { RSCPathnameNormalizer } from '../../normalizers/request/rsc'
-import { PrefetchRSCPathnameNormalizer } from '../../normalizers/request/prefetch-rsc'
 import { encodeURIPath } from '../../../shared/lib/encode-uri-path'
+import { isMetadataRouteFile } from '../../../lib/metadata/is-metadata-route'
+import { PagesNormalizers } from '../../normalizers/built/pages'
+import { AppNormalizers } from '../../normalizers/built/app'
+import { RouteKind } from '../../route-kind'
+import { isAppPageRouteDefinition } from '../../route-definitions/app-page-route-definition'
+import { selectAppPageEntry } from '../../../shared/lib/router/utils/app-paths'
+import { normalizeCatchAllRoutes } from './normalize-catchall-routes'
 
 export type FsOutput = {
   type:
@@ -57,6 +78,16 @@ export type FsOutput = {
   fsPath?: string
   itemsRoot?: string
   locale?: string
+  route?: RouteDefinition
+  params?: Params
+  requestPath?: string
+  error?: Error
+}
+
+type FilesystemRouteDefinition = RouteDefinition & {
+  i18n?: {
+    locale?: string
+  }
 }
 
 const debug = setupDebug('next:router-server:filesystem')
@@ -66,6 +97,41 @@ export type FilesystemDynamicRoute = ManifestRoute & {
    * The path matcher that can be used to match paths against this route.
    */
   match: PatchMatcher
+}
+
+const buildFilesystemDynamicRoute = (page: string): FilesystemDynamicRoute => {
+  const routeRegex = getNamedRouteRegex(page, {
+    prefixRouteKeys: true,
+    includePrefix: true,
+    includeSuffix: true,
+  })
+
+  return {
+    regex: routeRegex.re.toString(),
+    namedRegex: routeRegex.namedRegex,
+    routeKeys: routeRegex.routeKeys,
+    match: getRouteMatcher(routeRegex),
+    page,
+  }
+}
+
+const sortDynamicRoutes = (
+  routes: FilesystemDynamicRoute[]
+): FilesystemDynamicRoute[] => {
+  const references = new Map<string, FilesystemDynamicRoute[]>()
+  const pages: string[] = []
+
+  for (const route of routes) {
+    const existing = references.get(route.page)
+    if (existing) {
+      existing.push(route)
+    } else {
+      references.set(route.page, [route])
+      pages.push(route.page)
+    }
+  }
+
+  return getSortedRoutes(pages).flatMap((page) => references.get(page)!)
 }
 
 export const buildCustomRoute = <T>(
@@ -102,19 +168,45 @@ export const buildCustomRoute = <T>(
   }
 }
 
+// Measured retained cost of a cache entry beyond its strings (LRUNode,
+// Map slot, string header): ~120 bytes. Counting it keeps the entry count
+// bounded even when keys are short, so the budget approximates retained
+// bytes.
+const FS_LRU_ENTRY_OVERHEAD = 128
+const FS_LRU_MAX_SIZE = 8 * 1024 * 1024
+
+// The pathname passed to getItem is usually a V8 slice of the full request
+// URL, and a sliced string retains its parent — including the query string —
+// for as long as the cache holds the key. Store a flat copy instead.
+// The JSON round-trip returns an equal string for every input (unlike a
+// Buffer round-trip, which replaces lone surrogates), so distinct keys can
+// never collide on the stored copy.
+function flatKeyCopy(key: string): string {
+  return JSON.parse(JSON.stringify(key))
+}
+
+// Cached result for paths that resolve to nothing. Not null, so that a
+// cached miss can't be conflated with an uncached key (undefined).
+const notFound = Symbol('not-found')
+
 export async function setupFsCheck(opts: {
   dir: string
   dev: boolean
   minimalMode?: boolean
-  config: NextConfigComplete
-  addDevWatcherCallback?: (
-    arg: (files: Map<string, { timestamp: number }>) => void
-  ) => void
+  config: NextConfigRuntime
 }) {
   const getItemsLru = !opts.dev
-    ? new LRUCache<FsOutput | null>(1024 * 1024, function length(value) {
-        if (!value) return 0
+    ? new LRUCache<FsOutput | typeof notFound>(FS_LRU_MAX_SIZE, function length(
+        value,
+        key
+      ) {
+        const size = FS_LRU_ENTRY_OVERHEAD + key.length
+        if (value === notFound) {
+          // Negative cache entries only retain their key.
+          return size
+        }
         return (
+          size +
           (value.fsPath || '').length +
           value.itemPath.length +
           value.type.length
@@ -130,7 +222,22 @@ export async function setupFsCheck(opts: {
 
   const appFiles = new Set<string>()
   const pageFiles = new Set<string>()
+  // Map normalized path to the file path. This is essential
+  // for parallel and group routes as their original path
+  // cannot be restored from the request path.
+  // Example:
+  // [normalized-path] -> [file-path]
+  // /icon-<hash>.png -> .../app/@parallel/icon.png
+  // /icon-<hash>.png -> .../app/(group)/icon.png
+  // /icon.png -> .../app/icon.png
+  const staticMetadataFiles = new Map<string, string>()
   let dynamicRoutes: FilesystemDynamicRoute[] = []
+  // Page and app outputs need route metadata for compilation and rendering.
+  // Static assets remain plain filesystem matches.
+  const routeDefinitions = {
+    appFile: new Map<string, FilesystemRouteDefinition[]>(),
+    pageFile: new Map<string, FilesystemRouteDefinition[]>(),
+  }
 
   let middlewareMatcher:
     | ReturnType<typeof getMiddlewareRouteMatcher>
@@ -147,10 +254,46 @@ export async function setupFsCheck(opts: {
       afterFiles: [],
       fallback: [],
     },
+    onMatchHeaders: [],
     headers: [],
   }
   let buildId = 'development'
-  let prerenderManifest: PrerenderManifest
+  let previewProps: __ApiPreviewProps
+
+  const setRouteDefinition = (
+    type: 'appFile' | 'pageFile',
+    pathname: string,
+    definition: FilesystemRouteDefinition
+  ) => {
+    const definitions = routeDefinitions[type].get(pathname)
+    if (definitions) {
+      definitions.push(definition)
+    } else {
+      routeDefinitions[type].set(pathname, [definition])
+    }
+  }
+
+  const getRouteDefinition = (
+    type: 'appFile' | 'pageFile',
+    itemPath: string,
+    locale: string | undefined
+  ) => {
+    const definitions = routeDefinitions[type].get(itemPath)
+    if (!definitions?.length) return undefined
+
+    if (type === 'pageFile') {
+      return (
+        definitions.find((definition) => definition.i18n?.locale === locale) ??
+        definitions.find((definition) => !definition.i18n?.locale) ??
+        definitions[0]
+      )
+    }
+
+    return definitions[0]
+  }
+
+  const pagesNormalizers = new PagesNormalizers(distDir)
+  const appNormalizers = new AppNormalizers(distDir)
 
   if (!opts.dev) {
     const buildIdPath = path.join(opts.dir, opts.config.distDir, BUILD_ID_FILE)
@@ -203,7 +346,11 @@ export async function setupFsCheck(opts: {
     }
 
     const routesManifestPath = path.join(distDir, ROUTES_MANIFEST)
-    const prerenderManifestPath = path.join(distDir, PRERENDER_MANIFEST)
+    const previewPropsManifestPath = path.join(
+      distDir,
+      'server',
+      PREVIEW_PROPS_MANIFEST
+    )
     const middlewareManifestPath = path.join(
       distDir,
       'server',
@@ -215,15 +362,20 @@ export async function setupFsCheck(opts: {
       FUNCTIONS_CONFIG_MANIFEST
     )
     const pagesManifestPath = path.join(distDir, 'server', PAGES_MANIFEST)
+    const appPathsManifestPath = path.join(
+      distDir,
+      'server',
+      APP_PATHS_MANIFEST
+    )
     const appRoutesManifestPath = path.join(distDir, APP_PATH_ROUTES_MANIFEST)
 
     const routesManifest = JSON.parse(
       await fs.readFile(routesManifestPath, 'utf8')
     ) as RoutesManifest
 
-    prerenderManifest = JSON.parse(
-      await fs.readFile(prerenderManifestPath, 'utf8')
-    ) as PrerenderManifest
+    previewProps = JSON.parse(
+      await fs.readFile(previewPropsManifestPath, 'utf8')
+    ) as PreviewPropsManifest
 
     const middlewareManifest = JSON.parse(
       await fs.readFile(middlewareManifestPath, 'utf8').catch(() => '{}')
@@ -236,41 +388,115 @@ export async function setupFsCheck(opts: {
     const pagesManifest = JSON.parse(
       await fs.readFile(pagesManifestPath, 'utf8')
     )
+    const appPathsManifest = JSON.parse(
+      await fs.readFile(appPathsManifestPath, 'utf8').catch(() => '{}')
+    )
     const appRoutesManifest = JSON.parse(
       await fs.readFile(appRoutesManifestPath, 'utf8').catch(() => '{}')
     )
+    const appDynamicRoutes: FilesystemDynamicRoute[] = []
+    const appDynamicRoutePathnames = new Set<string>()
+    const addAppDynamicRoute = (pathname: string) => {
+      if (!isDynamicRoute(pathname) || appDynamicRoutePathnames.has(pathname)) {
+        return
+      }
+
+      appDynamicRoutePathnames.add(pathname)
+      appDynamicRoutes.push(buildFilesystemDynamicRoute(pathname))
+    }
 
     for (const key of Object.keys(pagesManifest)) {
+      const localeResult = opts.config.i18n
+        ? normalizeLocalePath(key, opts.config.i18n.locales)
+        : { pathname: key, detectedLocale: undefined }
+
       // ensure the non-locale version is in the set
       if (opts.config.i18n) {
-        pageFiles.add(
-          normalizeLocalePath(key, opts.config.i18n.locales).pathname
-        )
+        pageFiles.add(localeResult.pathname)
       } else {
         pageFiles.add(key)
       }
+
+      if (!isAPIRoute(key) && BLOCKED_PAGES.includes(localeResult.pathname)) {
+        continue
+      }
+
+      setRouteDefinition('pageFile', localeResult.pathname, {
+        kind: isAPIRoute(key) ? RouteKind.PAGES_API : RouteKind.PAGES,
+        pathname: localeResult.pathname,
+        page: key,
+        bundlePath: pagesNormalizers.bundlePath.normalize(key),
+        filename: pagesNormalizers.filename.normalize(pagesManifest[key]),
+        ...(opts.config.i18n
+          ? {
+              i18n: {
+                locale: localeResult.detectedLocale,
+              },
+            }
+          : undefined),
+      } as FilesystemRouteDefinition)
     }
     for (const key of Object.keys(appRoutesManifest)) {
       appFiles.add(appRoutesManifest[key])
     }
 
-    const escapedBuildId = escapeStringRegexp(buildId)
+    const appPages = Object.keys(appPathsManifest).filter((page) =>
+      isAppPageRoute(page)
+    )
+    const allAppPaths: Record<string, string[]> = {}
+    for (const page of appPages) {
+      const pathname = appNormalizers.pathname.normalize(page)
+      if (pathname in allAppPaths) allAppPaths[pathname].push(page)
+      else allAppPaths[pathname] = [page]
+    }
+    normalizeCatchAllRoutes(allAppPaths, appNormalizers.pathname)
+    for (const [pathname, appPaths] of Object.entries(allAppPaths)) {
+      // Keep manifest order aligned with the module packaged for this route.
+      const page = selectAppPageEntry(pathname, appPaths, (appPath) =>
+        appNormalizers.pathname.normalize(appPath)
+      )
+      setRouteDefinition('appFile', pathname, {
+        kind: RouteKind.APP_PAGE,
+        pathname,
+        page,
+        bundlePath: appNormalizers.bundlePath.normalize(page),
+        filename: appNormalizers.filename.normalize(appPathsManifest[page]),
+        appPaths,
+      } as FilesystemRouteDefinition)
+      addAppDynamicRoute(pathname)
+    }
+
+    const appRouteHandlers = Object.keys(appPathsManifest).filter((page) =>
+      isAppRouteRoute(page)
+    )
+    for (const page of appRouteHandlers) {
+      const pathname = appNormalizers.pathname.normalize(page)
+      setRouteDefinition('appFile', pathname, {
+        kind: RouteKind.APP_ROUTE,
+        pathname,
+        page,
+        bundlePath: appNormalizers.bundlePath.normalize(page),
+        filename: appNormalizers.filename.normalize(appPathsManifest[page]),
+      } as FilesystemRouteDefinition)
+      addAppDynamicRoute(pathname)
+    }
 
     for (const route of routesManifest.dataRoutes) {
       if (isDynamicRoute(route.page)) {
-        const routeRegex = getRouteRegex(route.page)
+        const routeRegex = getNamedRouteRegex(route.page, {
+          prefixRouteKeys: true,
+        })
         dynamicRoutes.push({
           ...route,
           regex: routeRegex.re.toString(),
+          namedRegex: routeRegex.namedRegex,
+          routeKeys: routeRegex.routeKeys,
           match: getRouteMatcher({
             // TODO: fix this in the manifest itself, must also be fixed in
             // upstream builder that relies on this
             re: opts.config.i18n
               ? new RegExp(
-                  route.dataRouteRegex.replace(
-                    `/${escapedBuildId}/`,
-                    `/${escapedBuildId}/(?<nextLocale>[^/]+?)/`
-                  )
+                  addLocalePrefixToDataRouteRegex(route.dataRouteRegex, buildId)
                 )
               : new RegExp(route.dataRouteRegex),
             groups: routeRegex.groups,
@@ -280,12 +506,24 @@ export async function setupFsCheck(opts: {
       nextDataRoutes.add(route.page)
     }
 
+    const filesystemDynamicRoutes: FilesystemDynamicRoute[] = [
+      ...appDynamicRoutes,
+    ]
+
     for (const route of routesManifest.dynamicRoutes) {
-      dynamicRoutes.push({
+      // If a route is marked as skipInternalRouting, it's not for the internal
+      // router, and instead has been added to support external routers.
+      if (route.skipInternalRouting) {
+        continue
+      }
+
+      filesystemDynamicRoutes.push({
         ...route,
-        match: getRouteMatcher(getRouteRegex(route.page)),
+        ...buildFilesystemDynamicRoute(route.page),
       })
     }
+
+    dynamicRoutes.push(...sortDynamicRoutes(filesystemDynamicRoutes))
 
     if (middlewareManifest.middleware?.['/']?.matchers) {
       middlewareMatcher = getMiddlewareRouteMatcher(
@@ -315,29 +553,34 @@ export async function setupFsCheck(opts: {
             fallback: [],
           },
       headers: routesManifest.headers,
+      onMatchHeaders: routesManifest.onMatchHeaders,
     }
   } else {
     // dev handling
     customRoutes = await loadCustomRoutes(opts.config)
 
-    prerenderManifest = {
-      version: 4,
-      routes: {},
-      dynamicRoutes: {},
-      notFoundRoutes: [],
-      preview: {
-        previewModeId: require('crypto').randomBytes(16).toString('hex'),
-        previewModeSigningKey: require('crypto')
-          .randomBytes(32)
-          .toString('hex'),
-        previewModeEncryptionKey: require('crypto')
-          .randomBytes(32)
-          .toString('hex'),
-      },
+    previewProps = {
+      previewModeId: (require('crypto') as typeof import('crypto'))
+        .randomBytes(16)
+        .toString('hex'),
+      previewModeSigningKey: (require('crypto') as typeof import('crypto'))
+        .randomBytes(32)
+        .toString('hex'),
+      previewModeEncryptionKey: (require('crypto') as typeof import('crypto'))
+        .randomBytes(32)
+        .toString('hex'),
     }
   }
 
   const headers = customRoutes.headers.map((item) =>
+    buildCustomRoute(
+      'header',
+      item,
+      opts.config.basePath,
+      opts.config.experimental.caseSensitiveRoutes
+    )
+  )
+  const onMatchHeaders = customRoutes.onMatchHeaders.map((item) =>
     buildCustomRoute(
       'header',
       item,
@@ -403,13 +646,11 @@ export async function setupFsCheck(opts: {
     // Because we can't know if the app directory is enabled or not at this
     // stage, we assume that it is.
     rsc: new RSCPathnameNormalizer(),
-    prefetchRSC: opts.config.experimental.ppr
-      ? new PrefetchRSCPathnameNormalizer()
-      : undefined,
   }
 
   return {
     headers,
+    onMatchHeaders,
     rewrites,
     redirects,
 
@@ -418,8 +659,23 @@ export async function setupFsCheck(opts: {
 
     appFiles,
     pageFiles,
+    staticMetadataFiles,
     dynamicRoutes,
     nextDataRoutes,
+    setRouteDefinitions(
+      type: 'appFile' | 'pageFile',
+      definitions: ReadonlyArray<RouteDefinition>
+    ) {
+      routeDefinitions[type].clear()
+      for (const definition of definitions) {
+        setRouteDefinition(
+          type,
+          definition.pathname,
+          definition as FilesystemRouteDefinition
+        )
+      }
+    },
+    getRouteDefinition,
 
     exportPathMapRoutes: undefined as
       | undefined
@@ -427,20 +683,23 @@ export async function setupFsCheck(opts: {
 
     devVirtualFsItems: new Set<string>(),
 
-    prerenderManifest,
+    previewProps,
     middlewareMatcher: middlewareMatcher as MiddlewareRouteMatch | undefined,
 
     ensureCallback(fn: typeof ensureFn) {
       ensureFn = fn
     },
 
-    async getItem(itemPath: string): Promise<FsOutput | null> {
+    async getItem(
+      itemPath: string,
+      requestPath?: string
+    ): Promise<FsOutput | null> {
       const originalItemPath = itemPath
       const itemKey = originalItemPath
       const lruResult = getItemsLru?.get(itemKey)
 
-      if (lruResult) {
-        return lruResult
+      if (lruResult !== undefined) {
+        return lruResult === notFound ? null : lruResult
       }
 
       const { basePath } = opts.config
@@ -460,9 +719,7 @@ export async function setupFsCheck(opts: {
       // Simulate minimal mode requests by normalizing RSC and postponed
       // requests.
       if (opts.minimalMode) {
-        if (normalizers.prefetchRSC?.match(itemPath)) {
-          itemPath = normalizers.prefetchRSC.normalize(itemPath, true)
-        } else if (normalizers.rsc.match(itemPath)) {
+        if (normalizers.rsc.match(itemPath)) {
           itemPath = normalizers.rsc.normalize(itemPath, true)
         }
       }
@@ -484,6 +741,19 @@ export async function setupFsCheck(opts: {
         }
       }
 
+      if (opts.dev && isMetadataRouteFile(itemPath, [], false)) {
+        const fsPath = staticMetadataFiles.get(itemPath)
+        if (fsPath) {
+          return {
+            // "nextStaticFolder" sets Cache-Control
+            // "no-cache, must-revalidate" on dev.
+            type: 'nextStaticFolder',
+            fsPath,
+            itemPath: fsPath,
+          }
+        }
+      }
+
       const itemsToCheck: Array<[Set<string>, FsOutput['type']]> = [
         [this.devVirtualFsItems, 'devVirtualFsItem'],
         [nextStaticFolderItems, 'nextStaticFolder'],
@@ -498,14 +768,14 @@ export async function setupFsCheck(opts: {
         let curItemPath = itemPath
         let curDecodedItemPath = decodedItemPath
 
-        const isDynamicOutput = type === 'pageFile' || type === 'appFile'
+        const isPageOrAppFile = type === 'pageFile' || type === 'appFile'
 
         if (i18n) {
           const localeResult = handleLocale(
             itemPath,
             // legacy behavior allows visiting static assets under
             // default locale but no other locale
-            isDynamicOutput
+            isPageOrAppFile
               ? undefined
               : [
                   i18n?.defaultLocale,
@@ -571,6 +841,12 @@ export async function setupFsCheck(opts: {
           } catch {}
         }
 
+        // Only page and app outputs participate in route rendering. Public,
+        // static, image, and virtual outputs are served as filesystem assets.
+        const route = isPageOrAppFile
+          ? getRouteDefinition(type, curItemPath, locale)
+          : undefined
+
         let matchedItem = items.has(curItemPath)
 
         // check decoded variant as well
@@ -609,8 +885,14 @@ export async function setupFsCheck(opts: {
               itemsRoot = publicFolderPath
               break
             }
-            default: {
+            case 'appFile':
+            case 'pageFile':
+            case 'nextImage':
+            case 'devVirtualFsItem': {
               break
+            }
+            default: {
+              ;(type) satisfies never
             }
           }
 
@@ -646,21 +928,42 @@ export async function setupFsCheck(opts: {
                   continue
                 }
               }
-            } else if (type === 'pageFile' || type === 'appFile') {
-              const isAppFile = type === 'appFile'
-              if (
-                ensureFn &&
-                (await ensureFn({
-                  type,
-                  itemPath: isAppFile
-                    ? normalizeMetadataRoute(curItemPath)
-                    : curItemPath,
-                })?.catch(() => 'ENSURE_FAILED')) === 'ENSURE_FAILED'
-              ) {
-                continue
-              }
-            } else {
+            } else if (!isPageOrAppFile) {
               continue
+            }
+          }
+
+          let error: Error | undefined
+
+          if (opts.dev && isPageOrAppFile) {
+            if (!route) {
+              continue
+            }
+
+            const isAppFile = type === 'appFile'
+
+            // Attempt to ensure the page/app file is compiled and ready.
+            if (ensureFn) {
+              const ensureItemPath = isAppFile
+                ? normalizeMetadataRoute(curItemPath)
+                : curItemPath
+
+              try {
+                await ensureFn({
+                  type,
+                  itemPath: ensureItemPath,
+                  route,
+                  requestPath,
+                })
+              } catch (err) {
+                // A disappeared route is not a match. Compilation errors still
+                // belong to this route and must render as a 500 downstream.
+                if (err instanceof PageNotFoundError) {
+                  continue
+                }
+
+                error = err instanceof Error ? err : new Error(String(err))
+              }
             }
           }
 
@@ -669,20 +972,50 @@ export async function setupFsCheck(opts: {
             continue
           }
 
+          if (isPageOrAppFile && !route && !matchedItem) {
+            continue
+          }
+
+          let params: Params | undefined
+          if (route && isAppPageRouteDefinition(route)) {
+            // Parallel app routes can contribute multiple dynamic app paths
+            // to one pathname. Preserve the params from the matching path.
+            for (const appPath of route.appPaths) {
+              const routePathname = appNormalizers.pathname.normalize(appPath)
+              if (!isDynamicRoute(routePathname)) {
+                continue
+              }
+
+              const routeParams = getRouteMatcher(getRouteRegex(routePathname))(
+                curItemPath
+              )
+
+              if (routeParams) {
+                params = routeParams
+                break
+              }
+            }
+          }
+
           const itemResult = {
             type,
             fsPath,
             locale,
             itemsRoot,
-            itemPath: curItemPath,
+            // itemPath is usually a slice of the request URL too; keep a
+            // flat copy so the cached value doesn't retain the full URL.
+            itemPath: flatKeyCopy(curItemPath),
+            route,
+            params,
+            error,
           }
 
-          getItemsLru?.set(itemKey, itemResult)
+          getItemsLru?.set(flatKeyCopy(itemKey), itemResult)
           return itemResult
         }
       }
 
-      getItemsLru?.set(itemKey, null)
+      getItemsLru?.set(flatKeyCopy(itemKey), notFound)
       return null
     },
     getDynamicRoutes() {

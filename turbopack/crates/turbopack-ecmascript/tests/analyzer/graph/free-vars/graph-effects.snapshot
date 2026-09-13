@@ -47,12 +47,10 @@
             ),
         ],
         span: 13..24,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "Buffer",
-        ),
+        var: "Buffer",
         ast_path: [
             Program(
                 Script,
@@ -96,7 +94,6 @@
             ),
         ],
         span: 13..19,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(

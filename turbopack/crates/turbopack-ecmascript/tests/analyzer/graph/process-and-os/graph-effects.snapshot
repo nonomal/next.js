@@ -1,8 +1,81 @@
 [
-    FreeVar {
-        var: FreeVar(
-            "require",
+    DestructuredMember {
+        obj: Call(
+            3,
+            FreeVar(
+                "require",
+            ),
+            [
+                Constant(
+                    Str(
+                        Atom(
+                            "os",
+                        ),
+                    ),
+                ),
+            ],
         ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "platform",
+                ),
+            ),
+        ),
+        span: 9..17,
+    },
+    DestructuredMember {
+        obj: Call(
+            3,
+            FreeVar(
+                "require",
+            ),
+            [
+                Constant(
+                    Str(
+                        Atom(
+                            "os",
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "endianness",
+                ),
+            ),
+        ),
+        span: 19..29,
+    },
+    DestructuredMember {
+        obj: Call(
+            3,
+            FreeVar(
+                "require",
+            ),
+            [
+                Constant(
+                    Str(
+                        Atom(
+                            "os",
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "arch",
+                ),
+            ),
+        ),
+        span: 31..35,
+    },
+    FreeVar {
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -40,7 +113,6 @@
             ),
         ],
         span: 40..47,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -88,10 +160,33 @@
         in_try: false,
         new: false,
     },
-    FreeVar {
-        var: FreeVar(
-            "require",
+    DestructuredMember {
+        obj: Call(
+            3,
+            FreeVar(
+                "require",
+            ),
+            [
+                Constant(
+                    Str(
+                        Atom(
+                            "process",
+                        ),
+                    ),
+                ),
+            ],
         ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "platform",
+                ),
+            ),
+        ),
+        span: 63..71,
+    },
+    FreeVar {
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -129,7 +224,6 @@
             ),
         ],
         span: 93..100,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -178,9 +272,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "process",
-        ),
+        var: "process",
         ast_path: [
             Program(
                 Script,
@@ -209,12 +301,9 @@
             ),
         ],
         span: 122..129,
-        in_try: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -252,7 +341,6 @@
             ),
         ],
         span: 149..156,
-        in_try: false,
     },
     Member {
         obj: FreeVar(
@@ -312,12 +400,10 @@
             ),
         ],
         span: 171..183,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "process",
-        ),
+        var: "process",
         ast_path: [
             Program(
                 Script,
@@ -371,7 +457,6 @@
             ),
         ],
         span: 171..178,
-        in_try: false,
     },
     Call {
         func: Variable(
@@ -588,9 +673,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -628,7 +711,6 @@
             ),
         ],
         span: 236..243,
-        in_try: false,
     },
     Call {
         func: Variable(
@@ -900,9 +982,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -940,7 +1020,6 @@
             ),
         ],
         span: 313..320,
-        in_try: false,
     },
     Call {
         func: Variable(
@@ -1058,12 +1137,10 @@
             ),
         ],
         span: 345..361,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "process",
-        ),
+        var: "process",
         ast_path: [
             Program(
                 Script,
@@ -1117,7 +1194,6 @@
             ),
         ],
         span: 345..352,
-        in_try: false,
     },
     Call {
         func: Variable(
@@ -1276,9 +1352,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -1316,7 +1390,6 @@
             ),
         ],
         span: 400..407,
-        in_try: false,
     },
     Member {
         obj: FreeVar(
@@ -1376,12 +1449,10 @@
             ),
         ],
         span: 419..431,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "process",
-        ),
+        var: "process",
         ast_path: [
             Program(
                 Script,
@@ -1435,7 +1506,6 @@
             ),
         ],
         span: 419..426,
-        in_try: false,
     },
     Member {
         obj: FreeVar(
@@ -1495,12 +1565,10 @@
             ),
         ],
         span: 438..454,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "process",
-        ),
+        var: "process",
         ast_path: [
             Program(
                 Script,
@@ -1554,7 +1622,6 @@
             ),
         ],
         span: 438..445,
-        in_try: false,
     },
     Call {
         func: Variable(
@@ -1716,9 +1783,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -1756,7 +1821,6 @@
             ),
         ],
         span: 493..500,
-        in_try: false,
     },
     Member {
         obj: Variable(
@@ -1819,7 +1883,7 @@
             ),
         ],
         span: 512..518,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -1882,7 +1946,7 @@
             ),
         ],
         span: 522..532,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Call {
         func: Variable(
@@ -2050,9 +2114,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -2090,7 +2152,6 @@
             ),
         ],
         span: 570..577,
-        in_try: false,
     },
     Member {
         obj: Variable(
@@ -2153,7 +2214,7 @@
             ),
         ],
         span: 592..598,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Call {
         func: Variable(

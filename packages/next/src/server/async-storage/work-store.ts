@@ -3,9 +3,11 @@ import type { IncrementalCache } from '../lib/incremental-cache'
 import type { RenderOpts } from '../app-render/types'
 import type { FetchMetric } from '../base-http'
 import type { RequestLifecycleOpts } from '../base-server'
-import type { FallbackRouteParams } from '../request/fallback-params'
 import type { AppSegmentConfig } from '../../build/segment-config/app/app-segment-config'
-import type { CacheLife } from '../use-cache/cache-life'
+import type {
+  ValidationLevel,
+  ResolvedCacheLifeProfiles,
+} from '../config-shared'
 
 import { AfterContext } from '../after/after-context'
 
@@ -20,23 +22,29 @@ export type WorkStoreContext = {
    */
   page: string
 
-  /**
-   * The route parameters that are currently unknown.
-   */
-  fallbackRouteParams: FallbackRouteParams | null
-
-  requestEndedState?: { ended?: boolean }
   isPrefetchRequest?: boolean
+  nonce?: string
   renderOpts: {
-    cacheLifeProfiles?: { [profile: string]: CacheLife }
+    cacheLifeProfiles: ResolvedCacheLifeProfiles
+    staticPageGenerationTimeout: number
     incrementalCache?: IncrementalCache
+    /**
+     * The hash of the most recent server component change (dev only). Included
+     * in `"use cache"` cache keys so that cached entries are revalidated after
+     * an edit, for every client, regardless of whether it runs the HMR client.
+     */
+    hmrRefreshHash?: string
     isOnDemandRevalidate?: boolean
+    cacheComponents: boolean
+    validationLevel: ValidationLevel
     fetchCache?: AppSegmentConfig['fetchCache']
-    isPossibleServerAction?: boolean
     pendingWaitUntil?: Promise<any>
     experimental: Pick<
       RenderOpts['experimental'],
-      'isRoutePPREnabled' | 'dynamicIO' | 'authInterrupts'
+      | 'isRoutePPREnabled'
+      | 'authInterrupts'
+      | 'useCacheTimeout'
+      | 'durableUseCacheEntries'
     >
 
     /**
@@ -58,16 +66,17 @@ export type WorkStoreContext = {
     // mirrored.
     RenderOpts,
     | 'assetPrefix'
-    | 'supportsDynamicResponse'
-    | 'shouldWaitOnAllReady'
-    | 'isRevalidate'
-    | 'nextExport'
+    | 'isBuildTimePrerendering'
     | 'isDraftMode'
     | 'isDebugDynamicAccesses'
-    | 'dev'
   > &
     RequestLifecycleOpts &
     Partial<Pick<RenderOpts, 'reactLoadableManifest'>>
+
+  /**
+   * The deployment ID of the current build.
+   */
+  deploymentId: string
 
   /**
    * The build ID of the current build.
@@ -79,67 +88,66 @@ export type WorkStoreContext = {
   previouslyRevalidatedTags: string[]
 }
 
-export function createWorkStore({
-  page,
-  fallbackRouteParams,
-  renderOpts,
-  requestEndedState,
-  isPrefetchRequest,
-  buildId,
-  previouslyRevalidatedTags,
-}: WorkStoreContext): WorkStore {
-  /**
-   * Rules of Static & Dynamic HTML:
-   *
-   *    1.) We must generate static HTML unless the caller explicitly opts
-   *        in to dynamic HTML support.
-   *
-   *    2.) If dynamic HTML support is requested, we must honor that request
-   *        or throw an error. It is the sole responsibility of the caller to
-   *        ensure they aren't e.g. requesting dynamic HTML for an AMP page.
-   *
-   *    3.) If the request is in draft mode, we must generate dynamic HTML.
-   *
-   *    4.) If the request is a server action, we must generate dynamic HTML.
-   *
-   * These rules help ensure that other existing features like request caching,
-   * coalescing, and ISR continue working as intended.
-   */
-  const isStaticGeneration =
-    !renderOpts.shouldWaitOnAllReady &&
-    !renderOpts.supportsDynamicResponse &&
-    !renderOpts.isDraftMode &&
-    !renderOpts.isPossibleServerAction
+export function createWorkStore(context: WorkStoreContext): WorkStore {
+  return createWorkStoreImpl(context, !!process.env.__NEXT_DEV_SERVER)
+}
 
-  const store: WorkStore = {
-    isStaticGeneration,
+export function createPrerenderWorkStore(context: WorkStoreContext): WorkStore {
+  return createWorkStoreImpl(
+    context,
+    !!process.env.__NEXT_DEV_SERVER ||
+      !!process.env.NEXT_DEBUG_BUILD ||
+      process.env.NEXT_SSG_FETCH_METRICS === '1'
+  )
+}
+
+function createWorkStoreImpl(
+  {
     page,
-    fallbackRouteParams,
+    renderOpts,
+    isPrefetchRequest,
+    buildId,
+    deploymentId,
+    previouslyRevalidatedTags,
+    nonce,
+  }: WorkStoreContext,
+  shouldTrackFetchMetrics: boolean
+): WorkStore {
+  const store: WorkStore = {
+    page,
     route: normalizeAppPath(page),
     incrementalCache:
       // we fallback to a global incremental cache for edge-runtime locally
       // so that it can access the fs cache without mocks
       renderOpts.incrementalCache || (globalThis as any).__incrementalCache,
     cacheLifeProfiles: renderOpts.cacheLifeProfiles,
-    isRevalidate: renderOpts.isRevalidate,
-    isPrerendering: renderOpts.nextExport,
+    useCacheTimeout: renderOpts.experimental.useCacheTimeout,
+    durableUseCacheEntries: renderOpts.experimental.durableUseCacheEntries,
+    staticPageGenerationTimeout: renderOpts.staticPageGenerationTimeout,
+    isBuildTimePrerendering: renderOpts.isBuildTimePrerendering,
     fetchCache: renderOpts.fetchCache,
     isOnDemandRevalidate: renderOpts.isOnDemandRevalidate,
+    requestId: undefined,
+    htmlRequestId: undefined,
 
     isDraftMode: renderOpts.isDraftMode,
 
-    requestEndedState,
     isPrefetchRequest,
     buildId,
+    deploymentId,
     reactLoadableManifest: renderOpts?.reactLoadableManifest || {},
     assetPrefix: renderOpts?.assetPrefix || '',
+    nonce,
 
     afterContext: createAfterContext(renderOpts),
-    dynamicIOEnabled: renderOpts.experimental.dynamicIO,
-    dev: renderOpts.dev ?? false,
+    cacheComponentsEnabled: renderOpts.cacheComponents,
+    validationLevel: renderOpts.validationLevel,
     previouslyRevalidatedTags,
+    requestStartTime: performance.timeOrigin + performance.now(),
     refreshTagsByCacheKind: createRefreshTagsByCacheKind(),
     runInCleanSnapshot: createSnapshot(),
+    shouldTrackFetchMetrics,
+    reactServerErrorsByDigest: new Map(),
   }
 
   // TODO: remove this when we resolve accessing the store outside the execution context

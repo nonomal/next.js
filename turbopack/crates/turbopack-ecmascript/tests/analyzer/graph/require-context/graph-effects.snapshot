@@ -47,12 +47,10 @@
             ),
         ],
         span: 70..85,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -96,7 +94,6 @@
             ),
         ],
         span: 70..77,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -265,7 +262,7 @@
             ),
         ],
         span: 164..179,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -369,7 +366,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -394,7 +391,7 @@
             ),
         ],
         span: 34..46,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -431,7 +428,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -471,7 +468,7 @@
             ),
         ],
         span: 34..40,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -509,7 +506,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -599,7 +596,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -640,7 +637,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),

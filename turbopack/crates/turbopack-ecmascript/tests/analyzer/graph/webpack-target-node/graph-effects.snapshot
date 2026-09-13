@@ -49,10 +49,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -77,7 +77,7 @@
             ),
         ],
         span: 46..56,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -129,10 +129,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -157,7 +157,7 @@
             ),
         ],
         span: 66..77,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -209,10 +209,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -237,7 +237,7 @@
             ),
         ],
         span: 89..104,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -289,10 +289,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -332,10 +332,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -360,7 +360,7 @@
             ),
         ],
         span: 259..280,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -422,10 +422,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -465,10 +465,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -537,10 +537,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -580,10 +580,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -608,7 +608,7 @@
             ),
         ],
         span: 327..348,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -653,7 +653,7 @@
                             ),
                         ),
                     ],
-                    mutable: true,
+                    mutability: Mutable,
                 },
             ),
         ],
@@ -693,10 +693,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -736,10 +736,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -759,9 +759,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -798,10 +796,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -841,10 +839,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -877,7 +875,6 @@
             ),
         ],
         span: 515..522,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -930,10 +927,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -973,10 +970,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -1053,10 +1050,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1096,10 +1093,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1116,7 +1113,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1169,7 +1166,7 @@
             ),
         ],
         span: 828..861,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -1241,10 +1238,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1284,10 +1281,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1304,7 +1301,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1343,7 +1340,7 @@
             Variable(
                 (
                     "res",
-                    #5,
+                    #6,
                 ),
             ),
             Constant(
@@ -1406,10 +1403,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1449,10 +1446,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1469,7 +1466,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1494,13 +1491,13 @@
             ),
         ],
         span: 965..985,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
             (
                 "res",
-                #5,
+                #6,
             ),
         ),
         prop: Constant(
@@ -1546,10 +1543,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1589,10 +1586,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1609,7 +1606,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1649,13 +1646,13 @@
             ),
         ],
         span: 965..975,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
             (
                 "res",
-                #5,
+                #6,
             ),
         ),
         prop: Constant(
@@ -1712,10 +1709,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1755,10 +1752,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1775,7 +1772,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1815,7 +1812,7 @@
             Variable(
                 (
                     "res",
-                    #5,
+                    #6,
                 ),
             ),
             Constant(
@@ -1873,12 +1870,12 @@
                             Variable(
                                 (
                                     "hello",
-                                    #5,
+                                    #6,
                                 ),
                             ),
                         ),
                     ],
-                    mutable: true,
+                    mutability: Mutable,
                 },
             ),
         ],
@@ -1918,10 +1915,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),
@@ -1961,10 +1958,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -1981,7 +1978,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -2001,9 +1998,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -2040,10 +2035,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -2076,7 +2071,6 @@
             ),
         ],
         span: 1113..1120,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -2129,10 +2123,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -2209,10 +2203,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     5,
                 ),
@@ -2237,7 +2231,7 @@
             ),
         ],
         span: 1156..1177,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -2299,10 +2293,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     5,
                 ),
@@ -2371,10 +2365,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     6,
                 ),
@@ -2399,7 +2393,7 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
+            ArrowFunctionBody(
                 Expr,
             ),
             Expr(
@@ -2433,7 +2427,7 @@
             ),
         ],
         span: 1252..1273,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Call {
         func: Variable(
@@ -2446,7 +2440,7 @@
             Value(
                 Unknown {
                     original_value: None,
-                    reason: "unsupported expression",
+                    reason: "assignment expression",
                     has_side_effects: true,
                 },
             ),
@@ -2487,10 +2481,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     6,
                 ),
@@ -2515,7 +2509,7 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
+            ArrowFunctionBody(
                 Expr,
             ),
             Expr(
@@ -2580,10 +2574,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     7,
                 ),
@@ -2657,10 +2651,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     8,
                 ),
@@ -2685,12 +2679,10 @@
             ),
         ],
         span: 1342..1356,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "module",
-        ),
+        var: "module",
         ast_path: [
             Program(
                 Script,
@@ -2727,10 +2719,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     8,
                 ),
@@ -2761,6 +2753,5 @@
             ),
         ],
         span: 1342..1348,
-        in_try: false,
     },
 ]

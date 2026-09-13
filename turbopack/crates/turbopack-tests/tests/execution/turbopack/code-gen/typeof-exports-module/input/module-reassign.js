@@ -1,3 +1,5 @@
-exports = () => 'hello'
-if (typeof exports === 'object') throw 'oh no'
-module.exports = 1234
+module = () => 'hello'
+if (typeof module === 'object') {
+  throw new Error("module-reassign: it's an object, so incorrectly inlined")
+}
+exports.foo = 1234

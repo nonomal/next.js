@@ -74,18 +74,19 @@ describe('app-dir - metadata-streaming', () => {
   })
 
   it('should only insert metadata once into head or body', async () => {
-    const browser = await next.browser('/slow')
+    // After hydration, React would hoist all metadata.
+    const $ = await next.render$('/slow')
 
     // each metadata should be inserted only once
 
-    expect(await browser.hasElementByCssSelector('head title')).toBe(false)
+    expect($('head title').length).toBe(0)
 
-    // only charset and viewport are rendered in head
-    expect((await browser.elementsByCss('head meta')).length).toBe(2)
-    expect((await browser.elementsByCss('body title')).length).toBe(1)
+    // only charset and viewport are hoisted into head during SSR
+    expect($('head meta').length).toBe(2)
+    expect($('body title').length).toBe(1)
 
     // all metadata should be rendered in body
-    expect((await browser.elementsByCss('body meta')).length).toBe(9)
+    expect($('body meta').length).toBe(9)
   })
 
   describe('dynamic api', () => {
@@ -96,12 +97,10 @@ describe('app-dir - metadata-streaming', () => {
     })
 
     it('should load the metadata in browser', async () => {
-      const browser = await next.browser('/dynamic-api')
-      await retry(async () => {
-        expect(await browser.elementByCss('body title').text()).toMatch(
-          /Dynamic api \d+/
-        )
-      })
+      // After hydration, React would hoist all metadata.
+      const $ = await next.render$('/dynamic-api')
+
+      expect($('body title').text() as string).toMatch(/Dynamic api \d+/)
     })
   })
 
@@ -157,8 +156,10 @@ describe('app-dir - metadata-streaming', () => {
   describe('static', () => {
     it('should render static metadata in the head', async () => {
       const $ = await next.render$('/static/full')
+      // We can't ensure if it's inserted into  head or body since it's a race condition,
+      // where sometimes the metadata can be suspended.
       expect($('title').length).toBe(1)
-      expect($('head title').text()).toBe('static page')
+      expect($('title').text()).toBe('static page')
     })
 
     it('should determine dynamic metadata in build and render in the body', async () => {
@@ -174,6 +175,21 @@ describe('app-dir - metadata-streaming', () => {
         {
           headers: {
             'user-agent': 'Twitterbot',
+          },
+        }
+      )
+      expect($('title').length).toBe(1)
+      expect($('head title').text()).toBe('partial static page')
+    })
+
+    it('should still render blocking metadata for Google speed insights bot (special case)', async () => {
+      const $ = await next.render$(
+        '/static/partial',
+        {},
+        {
+          headers: {
+            'user-agent':
+              'UA Mozilla/5.0 (Linux; Android 7.0; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4590.2 Mobile Safari/537.36 Chrome-Lighthouse',
           },
         }
       )

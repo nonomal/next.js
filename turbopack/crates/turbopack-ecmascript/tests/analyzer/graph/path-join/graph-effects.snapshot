@@ -1,8 +1,6 @@
 [
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Module,
@@ -43,7 +41,6 @@
             ),
         ],
         span: 11..18,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -95,9 +92,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Module,
@@ -138,7 +133,6 @@
             ),
         ],
         span: 79..86,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -243,7 +237,7 @@
             ),
         ],
         span: 115..124,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -367,7 +361,7 @@
             ),
         ],
         span: 158..167,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -491,7 +485,7 @@
             ),
         ],
         span: 202..211,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -615,7 +609,7 @@
             ),
         ],
         span: 246..255,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Variable(
@@ -739,12 +733,10 @@
             ),
         ],
         span: 291..300,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "global",
-        ),
+        var: "global",
         ast_path: [
             Program(
                 Module,
@@ -787,7 +779,6 @@
             ),
         ],
         span: 328..334,
-        in_try: false,
     },
     MemberCall {
         obj: Variable(
@@ -899,9 +890,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Module,
@@ -942,7 +931,6 @@
             ),
         ],
         span: 362..369,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -1038,7 +1026,7 @@
             ),
         ],
         span: 458..465,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Member(
@@ -1046,9 +1034,13 @@
             Module(
                 ModuleValue {
                     module: "path",
-                    annotations: ImportAnnotations {
-                        map: {},
-                    },
+                    annotations: None,
+                    analyze_for_constants: false,
+                    reference: Some(
+                        ModuleReferenceIndex(
+                            2,
+                        ),
+                    ),
                 },
             ),
             Constant(
@@ -1097,7 +1089,7 @@
             ),
         ],
         span: 486..493,
-        in_try: false,
+        in_truthiness_context: false,
     },
     ImportedBinding {
         esm_reference_index: 1,
@@ -1141,10 +1133,9 @@
             ),
         ],
         span: 486..488,
-        in_try: false,
     },
     ImportedBinding {
-        esm_reference_index: 2,
+        esm_reference_index: 3,
         export: Some(
             "join",
         ),
@@ -1179,12 +1170,36 @@
             ),
         ],
         span: 514..519,
-        in_try: false,
     },
-    Call {
-        func: FreeVar(
-            "import",
+    DestructuredMember {
+        obj: Awaited(
+            4,
+            Call(
+                3,
+                FreeVar(
+                    "import",
+                ),
+                [
+                    Constant(
+                        Str(
+                            Atom(
+                                "path",
+                            ),
+                        ),
+                    ),
+                ],
+            ),
         ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "join",
+                ),
+            ),
+        ),
+        span: 529..533,
+    },
+    DynamicImport {
         args: [
             Value(
                 Constant(
@@ -1234,6 +1249,10 @@
         ],
         span: 556..570,
         in_try: false,
-        new: false,
+        export_usage: PartialNamespaceObject(
+            [
+                "join",
+            ],
+        ),
     },
 ]

@@ -1,6 +1,9 @@
-import { getFullUrl, waitFor } from 'next-test-utils'
-import os from 'os'
-import { Playwright } from './browsers/playwright'
+import { debugPrint, getFullUrl } from 'next-test-utils'
+import {
+  Permissions,
+  Playwright,
+  PlaywrightNavigationWaitUntil,
+} from './browsers/playwright'
 import { Page } from 'playwright'
 
 export type { Playwright }
@@ -9,25 +12,7 @@ if (!process.env.TEST_FILE_PATH) {
   process.env.TEST_FILE_PATH = module.parent!.filename
 }
 
-let deviceIP: string
-const isBrowserStack = !!process.env.BROWSERSTACK
 ;(global as any).browserName = process.env.BROWSER_NAME || 'chrome'
-
-if (isBrowserStack) {
-  const nets = os.networkInterfaces()
-  for (const key of Object.keys(nets)) {
-    let done = false
-
-    for (const item of nets[key]!) {
-      if (item.family === 'IPv4' && !item.internal) {
-        deviceIP = item.address
-        done = true
-        break
-      }
-    }
-    if (done) break
-  }
-}
 
 let browserTeardown: (() => Promise<void>)[] = []
 let browserQuit: (() => Promise<void>) | undefined
@@ -45,6 +30,7 @@ if (typeof afterAll === 'function') {
 }
 
 export interface WebdriverOptions {
+  permissions?: Permissions
   /**
    * whether to wait for React hydration to finish
    */
@@ -54,6 +40,10 @@ export interface WebdriverOptions {
    */
   retryWaitHydration?: boolean
   /**
+   * The browser event to wait for during the initial page load. Passed through to `browser.loadPage`
+   * */
+  waitUntil?: PlaywrightNavigationWaitUntil
+  /**
    * disable cache for page load
    */
   disableCache?: boolean
@@ -62,7 +52,11 @@ export interface WebdriverOptions {
    * @param page
    * @returns
    */
-  beforePageLoad?: (page: Page) => void
+  beforePageLoad?: (page: Page) => void | Promise<void>
+  /**
+   * @see {@link https://playwright.dev/docs/api/class-page#page-set-extra-http-headers Playwright.Page.setExtraHTTPHeaders}
+   */
+  extraHTTPHeaders?: Record<string, string>
   /**
    * browser locale
    */
@@ -71,7 +65,6 @@ export interface WebdriverOptions {
    * disable javascript
    */
   disableJavaScript?: boolean
-  headless?: boolean
   /**
    * ignore https errors
    */
@@ -80,9 +73,22 @@ export interface WebdriverOptions {
   pushErrorAsConsoleLog?: boolean
 
   /**
+   * Suppress the harness from echoing the browser's console output to the
+   * test's terminal (the `Browser Log:` lines). Browser logs are still
+   * collected and available via `browser.log()`.
+   */
+  disableBrowserLog?: boolean
+
+  /**
    * Override the user agent
    */
   userAgent?: string
+
+  /**
+   * Override the base URL/port that `url` is resolved against. Useful when the
+   * test needs to drive a proxy or a separate server in front of Next.js.
+   */
+  baseUrl?: string | number
 }
 
 /**
@@ -107,14 +113,21 @@ export default async function webdriver(
     retryWaitHydration,
     disableCache,
     beforePageLoad,
+    extraHTTPHeaders,
     locale,
     disableJavaScript,
+    permissions,
     ignoreHTTPSErrors,
-    headless,
     cpuThrottleRate,
     pushErrorAsConsoleLog,
+    disableBrowserLog,
     userAgent,
+    waitUntil,
+    baseUrl,
   } = options
+  if (baseUrl !== undefined) {
+    appPortOrUrl = baseUrl
+  }
 
   const { Playwright, quit } = await import('./browsers/playwright')
   browserQuit = quit
@@ -126,33 +139,31 @@ export default async function webdriver(
     locale!,
     !disableJavaScript,
     Boolean(ignoreHTTPSErrors),
-    // allow headless to be overwritten for a particular test
-    typeof headless !== 'undefined' ? headless : !!process.env.HEADLESS,
-    userAgent
+    userAgent,
+    permissions
   )
   ;(global as any).browserName = browserName
 
-  const fullUrl = getFullUrl(
-    appPortOrUrl,
-    url,
-    isBrowserStack ? deviceIP : 'localhost'
-  )
+  const fullUrl = getFullUrl(appPortOrUrl, url, 'localhost')
 
-  console.log(`\n> Loading browser with ${fullUrl}\n`)
+  debugPrint(`Loading browser with ${fullUrl}`)
 
   await browser.loadPage(fullUrl, {
     disableCache,
     cpuThrottleRate,
     beforePageLoad,
+    extraHTTPHeaders,
     pushErrorAsConsoleLog,
+    disableBrowserLog,
+    waitUntil,
   })
-  console.log(`\n> Loaded browser with ${fullUrl}\n`)
+  debugPrint(`Loaded browser with ${fullUrl}`)
 
   browserTeardown.push(browser.close.bind(browser))
 
   // Wait for application to hydrate
-  if (waitHydration) {
-    console.log(`\n> Waiting hydration for ${fullUrl}\n`)
+  if (!disableJavaScript && waitHydration) {
+    debugPrint(`Waiting hydration for ${fullUrl}`)
 
     const checkHydrated = async () => {
       await browser.eval(() => {
@@ -198,14 +209,8 @@ export default async function webdriver(
       }
     }
 
-    console.log(`\n> Hydration complete for ${fullUrl}\n`)
+    debugPrint(`Hydration complete for ${fullUrl}`)
   }
 
-  // This is a temporary workaround for turbopack starting watching too late.
-  // So we delay file changes to give it some time
-  // to connect the WebSocket and start watching.
-  if (process.env.IS_TURBOPACK_TEST) {
-    await waitFor(1000)
-  }
   return browser
 }

@@ -155,7 +155,7 @@ pub trait AsyncBencherExtension<A: AsyncExecutor> {
         TF: Future<Output = ()>;
 }
 
-impl<A: AsyncExecutor> AsyncBencherExtension<A> for AsyncBencher<'_, '_, A, WallTime> {
+impl<A: AsyncExecutor> AsyncBencherExtension<A> for AsyncBencher<'_, '_, A> {
     fn try_iter_custom<R, F>(&mut self, routine: R)
     where
         R: Fn(u64, WallTime) -> F,
@@ -164,7 +164,7 @@ impl<A: AsyncExecutor> AsyncBencherExtension<A> for AsyncBencher<'_, '_, A, Wall
         let log_progress = read_env_bool("TURBOPACK_BENCH_PROGRESS");
 
         let routine = &routine;
-        self.iter_custom(|iters| async move {
+        self.iter_custom(async |iters| {
             let measurement = WallTime;
             let value = routine(iters, measurement).await.expect("routine failed");
             if log_progress {
@@ -208,7 +208,7 @@ impl<A: AsyncExecutor> AsyncBencherExtension<A> for AsyncBencher<'_, '_, A, Wall
             input
         }))));
 
-        self.iter_custom(|iters| async move {
+        self.iter_custom(async |iters| {
             let measurement = WallTime;
 
             let input = input_mutex

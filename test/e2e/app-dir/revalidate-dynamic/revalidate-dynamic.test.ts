@@ -1,12 +1,14 @@
 import { nextTestSetup } from 'e2e-utils'
 
+// TODO(deploy-test-completion): Remove this suite from the deploy manifest.
+// It was excluded as a known deploy failure without a documented root cause.
 describe('app-dir revalidate-dynamic', () => {
   const { next, isNextStart } = nextTestSetup({
     files: __dirname,
   })
 
   if (isNextStart) {
-    it('should correctly mark a route handler that uses unstable_expireTag as dynamic', async () => {
+    it('should correctly mark a route handler that uses revalidateTag as dynamic', async () => {
       expect(next.cliOutput).toContain('ƒ /api/revalidate-path')
       expect(next.cliOutput).toContain('ƒ /api/revalidate-tag')
     })

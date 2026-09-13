@@ -1,22 +1,20 @@
 import { nextTestSetup } from 'e2e-utils'
 import {
-  assertHasRedbox,
+  waitForRedbox,
   getRedboxDescription,
   getRedboxSource,
   openRedbox,
 } from 'next-test-utils'
 import stripAnsi from 'strip-ansi'
 
+// TODO(deploy-test-completion): Re-enable this suite in deploy mode.
+// It likely asserts local CLI or runtime output that deploy tests do not expose.
+// @force-gate !deploy
 describe('use-cache-close-over-function', () => {
-  const { next, isNextDev, isTurbopack, skipped } = nextTestSetup({
+  const { next, isNextDev, isTurbopack } = nextTestSetup({
     files: __dirname,
-    skipDeployment: true,
     skipStart: process.env.NEXT_TEST_MODE !== 'dev',
   })
-
-  if (skipped) {
-    return
-  }
 
   if (isNextDev) {
     it('should show an error toast for client-side usage', async () => {
@@ -48,32 +46,19 @@ describe('use-cache-close-over-function', () => {
 
       const cliOutput = stripAnsi(next.cliOutput.slice(outputIndex))
       expect(cliOutput).toContain(
-        isTurbopack
-          ? 'Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.' +
-              '\n  [function fn]' +
-              '\n   ^^^^^^^^^^^' +
-              '\n    at createCachedFn (app/client/page.tsx:8:2)' +
-              '\n    at Page (app/client/page.tsx:15:27)' +
-              '\n   6 |   }' +
-              '\n   7 |' +
-              '\n>  8 |   return async () => {' +
-              '\n     |  ^' +
-              "\n   9 |     'use cache'" +
-              '\n  10 |     return Math.random() + fn()' +
-              '\n  11 |   }'
-          : '' +
-              'Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.' +
-              '\n  [function fn]' +
-              '\n   ^^^^^^^^^^^' +
-              '\n    at createCachedFn (app/client/page.tsx:8:2)' +
-              '\n    at Page (app/client/page.tsx:15:27)' +
-              '\n   6 |   }' +
-              '\n   7 |' +
-              '\n>  8 |   return async () => {' +
-              '\n     |  ^' +
-              "\n   9 |     'use cache'" +
-              '\n  10 |     return Math.random() + fn()' +
-              '\n  11 |   }'
+        '' +
+          'Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.' +
+          '\n  [function fn]' +
+          '\n   ^^^^^^^^^^^' +
+          '\n    at createCachedFn (app/client/page.tsx:8:3)' +
+          '\n    at Page (app/client/page.tsx:15:28)' +
+          '\n   6 |   }' +
+          '\n   7 |' +
+          '\n>  8 |   return async () => {' +
+          '\n     |   ^' +
+          "\n   9 |     'use cache'" +
+          '\n  10 |     return Math.random() + fn()' +
+          '\n  11 |   }'
       )
     })
 
@@ -81,7 +66,7 @@ describe('use-cache-close-over-function', () => {
       const outputIndex = next.cliOutput.length
       const browser = await next.browser('/server')
 
-      await assertHasRedbox(browser)
+      await waitForRedbox(browser)
 
       const errorDescription = await getRedboxDescription(browser)
       const errorSource = await getRedboxSource(browser)
@@ -111,22 +96,21 @@ describe('use-cache-close-over-function', () => {
               'Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.' +
               '\n  [function fn]' +
               '\n   ^^^^^^^^^^^' +
-              '\n    at createCachedFn (app/server/page.tsx:6:2)' +
-              // TODO(veil): Should be source-mapped.
-              '\n    at [project]'
+              '\n    at createCachedFn (app/server/page.tsx:6:3)' +
+              '\n    at module evaluation (app/server/page.tsx:12:24)'
           : '' +
               'Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.' +
               '\n  [function fn]' +
               '\n   ^^^^^^^^^^^' +
-              '\n    at createCachedFn (app/server/page.tsx:6:2)' +
-              '\n    at eval (app/server/page.tsx:12:23)' +
+              '\n    at createCachedFn (app/server/page.tsx:6:3)' +
+              '\n    at eval (app/server/page.tsx:12:24)' +
               // TODO(veil): Should be source-mapped.
               '\n    at <unknown> (rsc)'
       )
       expect(cliOutput).toContain(
         '' +
           '\n> 6 |   return async () => {' +
-          '\n    |  ^' +
+          '\n    |   ^' +
           "\n  7 |     'use cache'"
       )
     })

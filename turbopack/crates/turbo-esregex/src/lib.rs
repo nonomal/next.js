@@ -1,25 +1,28 @@
 #![feature(arbitrary_self_types_pointers)]
 
-use anyhow::{Result, bail};
+use std::vec;
 
-pub fn register() {
-    turbo_tasks::register();
-    include!(concat!(env!("OUT_DIR"), "/register.rs"));
-}
+use anyhow::{Result, bail};
+use bincode::{
+    Decode, Encode,
+    de::Decoder,
+    enc::Encoder,
+    error::{DecodeError, EncodeError},
+    impl_borrow_decode,
+};
 
 /// A simple regular expression implementation following ecmascript semantics
 ///
 /// Delegates to the `regex` crate when possible and `regress` otherwise.
 #[derive(Debug, Clone)]
-#[turbo_tasks::value(eq = "manual", shared)]
-#[serde(into = "RegexForm", try_from = "RegexForm")]
+#[turbo_tasks::value(eq = "manual", shared, serialization = "custom")]
 pub struct EsRegex {
     #[turbo_tasks(trace_ignore)]
     delegate: EsRegexImpl,
     // Store the original arguments used to construct
     // this regex to support equality and serialization.
-    pattern: String,
-    flags: String,
+    pub pattern: String,
+    pub flags: String,
 }
 
 #[derive(Debug, Clone)]
@@ -39,29 +42,24 @@ impl PartialEq for EsRegex {
 }
 impl Eq for EsRegex {}
 
-impl TryFrom<RegexForm> for EsRegex {
-    type Error = anyhow::Error;
-
-    fn try_from(value: RegexForm) -> std::result::Result<Self, Self::Error> {
-        EsRegex::new(&value.pattern, &value.pattern)
+impl Encode for EsRegex {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.pattern.encode(encoder)?;
+        self.flags.encode(encoder)?;
+        Ok(())
     }
 }
 
-/// This is the serializable form for the `EsRegex` struct
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-struct RegexForm {
-    pattern: String,
-    flags: String,
-}
-
-impl From<EsRegex> for RegexForm {
-    fn from(value: EsRegex) -> Self {
-        Self {
-            pattern: value.pattern,
-            flags: value.flags,
-        }
+impl<Context> Decode<Context> for EsRegex {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let pattern: String = Decode::decode(decoder)?;
+        let flags: String = Decode::decode(decoder)?;
+        // TODO: perf: there's cloning happening here, we should be able to just move the `String`
+        EsRegex::new(&pattern, &flags).map_err(|err| DecodeError::OtherString(err.to_string()))
     }
 }
+
+impl_borrow_decode!(EsRegex);
 
 impl EsRegex {
     /// Support ecmascript style regular expressions by selecting the `regex` crate when possible
@@ -87,7 +85,7 @@ impl EsRegex {
                 'u' => applied_flags.push('u'),
                 // sticky search: not relevant for the regex itself
                 'y' => {}
-                _ => bail!("unsupported flag `{}` in regex", flag),
+                _ => bail!("unsupported flag `{flag}` in regex: `{pattern}` with flags: `{flags}`"),
             }
         }
 
@@ -104,7 +102,7 @@ impl EsRegex {
                 // flags format so we can pass the original flags value.
                 match regress::Regex::with_flags(&pattern, regress::Flags::from(flags)) {
                     Ok(reg) => Ok(EsRegexImpl::Regress(reg)),
-                    // Propogate the error as is, regress has useful error messages.
+                    // Propagate the error as is, regress has useful error messages.
                     Err(e) => Err(e),
                 }
             }
@@ -116,18 +114,270 @@ impl EsRegex {
         })
     }
 
-    /// Returns true if there is any match for this regex in the `haystac`
+    /// Returns true if there is any match for this regex in the `haystack`.
     pub fn is_match(&self, haystack: &str) -> bool {
         match &self.delegate {
             EsRegexImpl::Regex(r) => r.is_match(haystack),
             EsRegexImpl::Regress(r) => r.find(haystack).is_some(),
         }
     }
+
+    /// Returns the normalized `regex`-crate source (with inline flags already applied) if this
+    /// regex is backed by the `regex` crate, or `None` if it falls back to `regress` (e.g. it uses
+    /// lookahead/backreferences). Useful for combining several patterns into a [`regex::RegexSet`].
+    pub fn as_regex_str(&self) -> Option<&str> {
+        match &self.delegate {
+            EsRegexImpl::Regex(r) => Some(r.as_str()),
+            EsRegexImpl::Regress(_) => None,
+        }
+    }
+
+    /// Searches for the first match of the regex in the `haystack`, and iterates over the capture
+    /// groups within that first match.
+    ///
+    /// `None` is returned if there is no match. Individual capture groups may be `None` if the
+    /// capture group wasn't included in the match.
+    ///
+    /// The first capture group is always present ([`Some`]) and represents the entire match.
+    ///
+    /// Capture groups are represented as string slices of the `haystack`, and live for the lifetime
+    /// of `haystack`.
+    pub fn captures<'h>(&self, haystack: &'h str) -> Option<Captures<'h>> {
+        let delegate = match &self.delegate {
+            EsRegexImpl::Regex(r) => CapturesImpl::Regex {
+                captures: r.captures(haystack)?,
+                idx: 0,
+            },
+            EsRegexImpl::Regress(r) => {
+                let re_match = r.find(haystack)?;
+                CapturesImpl::Regress {
+                    captures_iter: re_match.captures.into_iter(),
+                    haystack,
+                    match_range: Some(re_match.range),
+                }
+            }
+        };
+        Some(Captures { delegate })
+    }
+}
+
+/// A group of [`EsRegex`]es matched against a haystack as a unit.
+///
+/// The members backed by the `regex` crate are compiled into a single [`regex::RegexSet`] once,
+/// when the group is built, rather than on every match. The remainder (those that fall back to
+/// `regress`, e.g. for lookahead) are matched one at a time.
+#[derive(Debug, Clone)]
+#[turbo_tasks::value(eq = "manual", shared, serialization = "custom")]
+pub struct EsRegexSet {
+    /// The members, in the order they were given. Also the source of truth for equality and
+    /// serialization, since [`regex::RegexSet`] supports neither.
+    regexes: Vec<EsRegex>,
+    /// The combined members, or `None` if the combined program couldn't be built.
+    #[turbo_tasks(trace_ignore)]
+    set: Option<regex::RegexSet>,
+    /// Indices into `regexes` of the members `set` doesn't cover. Usually empty.
+    individual: Vec<u32>,
+}
+
+impl PartialEq for EsRegexSet {
+    fn eq(&self, other: &Self) -> bool {
+        self.regexes == other.regexes
+    }
+}
+impl Eq for EsRegexSet {}
+
+impl Encode for EsRegexSet {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.regexes.encode(encoder)
+    }
+}
+
+impl<Context> Decode<Context> for EsRegexSet {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let regexes: Vec<EsRegex> = Decode::decode(decoder)?;
+        Ok(EsRegexSet::new(regexes))
+    }
+}
+
+impl_borrow_decode!(EsRegexSet);
+
+impl Default for EsRegexSet {
+    fn default() -> Self {
+        Self::new(Vec::new())
+    }
+}
+
+impl EsRegexSet {
+    /// Builds the combined matcher. Members backed by `regress` can't join a
+    /// [`regex::RegexSet`], and the combined program has its own size limit; either way the
+    /// leftovers are recorded up front and matched one at a time.
+    pub fn new(regexes: Vec<EsRegex>) -> Self {
+        let set = regex::RegexSet::new(regexes.iter().filter_map(EsRegex::as_regex_str)).ok();
+        let individual = regexes
+            .iter()
+            .enumerate()
+            .filter(|(_, regex)| set.is_none() || regex.as_regex_str().is_none())
+            .map(|(index, _)| index as u32)
+            .collect();
+        Self {
+            regexes,
+            set,
+            individual,
+        }
+    }
+
+    /// Returns true if any member matches somewhere in the `haystack`.
+    pub fn is_match(&self, haystack: &str) -> bool {
+        if let Some(set) = &self.set
+            && set.is_match(haystack)
+        {
+            return true;
+        }
+        self.individual
+            .iter()
+            .any(|&index| self.regexes[index as usize].is_match(haystack))
+    }
+
+    /// Returns true if the group has no members.
+    pub fn is_empty(&self) -> bool {
+        self.regexes.is_empty()
+    }
+}
+
+pub struct Captures<'h> {
+    delegate: CapturesImpl<'h>,
+}
+
+enum CapturesImpl<'h> {
+    // We have to use `regex::Captures` (which is not an iterator) here instead of
+    // `regex::SubCaptureMatches` (an iterator) because `SubCaptureMatches` must have a reference
+    // to `Capture`, and that would require a self-referential struct.
+    //
+    // Ideally, `regex::Capture` would implement `IntoIterator`, and we could use that here
+    // instead.
+    Regex {
+        captures: regex::Captures<'h>,
+        idx: usize,
+    },
+    // We can't use the iterator from `regress::Match::groups()` due to similar lifetime issues.
+    Regress {
+        captures_iter: vec::IntoIter<Option<regress::Range>>,
+        haystack: &'h str,
+        match_range: Option<regress::Range>,
+    },
+}
+
+impl<'h> Iterator for Captures<'h> {
+    type Item = Option<&'h str>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match &mut self.delegate {
+            CapturesImpl::Regex { captures, idx } => {
+                if *idx >= captures.len() {
+                    None
+                } else {
+                    let capture = Some(captures.get(*idx).map(|sub_match| sub_match.as_str()));
+                    *idx += 1;
+                    capture
+                }
+            }
+            CapturesImpl::Regress {
+                captures_iter,
+                haystack,
+                match_range,
+            } => {
+                if let Some(range) = match_range.take() {
+                    // always yield range first
+                    Some(Some(&haystack[range]))
+                } else {
+                    Some(captures_iter.next()?.map(|range| &haystack[range]))
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{EsRegex, EsRegexImpl};
+    use super::{EsRegex, EsRegexImpl, EsRegexSet};
+
+    #[test]
+    fn es_regex_set_matches_either_delegate() {
+        // `a(?!b)` needs regress; `^/docs` is handled by the shared `RegexSet`.
+        let set = EsRegexSet::new(vec![
+            EsRegex::new("^/docs", "").unwrap(),
+            EsRegex::new("a(?!b)", "").unwrap(),
+        ]);
+        assert_eq!(set.individual, vec![1]);
+        assert!(set.is_match("/docs/getting-started"));
+        assert!(set.is_match("ac"));
+        assert!(!set.is_match("/blog"));
+        assert!(!set.is_match("ab"));
+    }
+
+    #[test]
+    fn es_regex_set_combines_every_member_when_it_can() {
+        let set = EsRegexSet::new(vec![
+            EsRegex::new("^/docs", "").unwrap(),
+            EsRegex::new("^/blog", "").unwrap(),
+        ]);
+        // A miss only queries the combined set, not every member again.
+        assert!(set.individual.is_empty());
+        assert!(set.is_match("/docs"));
+        assert!(set.is_match("/blog"));
+        assert!(!set.is_match("/about"));
+    }
+
+    #[test]
+    fn empty_es_regex_set_never_matches() {
+        let set = EsRegexSet::default();
+        assert!(set.is_empty());
+        assert!(!set.is_match(""));
+        assert!(!set.is_match("/docs"));
+    }
+
+    #[test]
+    fn oversized_es_regex_set_falls_back_to_matching_individually() {
+        // Each of these compiles on its own but together they blow the combined size limit.
+        const N: usize = 60_000;
+        let regexes = vec![
+            EsRegex::new(&format!("^/docs/[0-9a-zA-Z]{{{N}}}"), "").unwrap(),
+            EsRegex::new(&format!("^/blog/[0-9a-zA-Z]{{{N}}}"), "").unwrap(),
+        ];
+        assert!(regexes.iter().all(|regex| regex.as_regex_str().is_some()));
+        let set = EsRegexSet::new(regexes);
+        assert!(set.set.is_none());
+        assert_eq!(set.individual, vec![0, 1]);
+        assert!(set.is_match(&format!("/docs/{}", "a".repeat(N))));
+        assert!(set.is_match(&format!("/blog/{}", "a".repeat(N))));
+        assert!(!set.is_match("/about"));
+    }
+
+    #[test]
+    fn es_regex_set_round_trip_bincode() {
+        let set = EsRegexSet::new(vec![
+            EsRegex::new("^/docs", "").unwrap(),
+            EsRegex::new("a(?!b)", "").unwrap(),
+        ]);
+        let config = bincode::config::standard();
+        let encoded = bincode::encode_to_vec(&set, config).unwrap();
+        let (decoded, len) = bincode::decode_from_slice::<EsRegexSet, _>(&encoded, config).unwrap();
+        assert_eq!(set, decoded);
+        assert_eq!(len, encoded.len());
+        // The `RegexSet` is rebuilt on decode, not carried in the encoding.
+        assert!(decoded.is_match("/docs"));
+        assert!(decoded.is_match("ac"));
+    }
+
+    #[test]
+    fn round_trip_bincode() {
+        let regex = EsRegex::new("[a-z]", "i").unwrap();
+        let config = bincode::config::standard();
+        let encoded = bincode::encode_to_vec(&regex, config).unwrap();
+        let (decoded, len) = bincode::decode_from_slice::<EsRegex, _>(&encoded, config).unwrap();
+        assert_eq!(regex, decoded);
+        assert_eq!(len, encoded.len());
+    }
 
     #[test]
     fn es_regex_matches_simple() {
@@ -151,5 +401,37 @@ mod tests {
         // Don't bother asserting on the message since we delegate
         // that to the underlying implementations.
         assert!(matches!(EsRegex::new("*", ""), Err { .. }))
+    }
+
+    #[test]
+    fn captures_with_regex() {
+        let regex = EsRegex::new(r"(notmatched)|(\d{4})-(\d{2})-(\d{2})", "").unwrap();
+        assert!(matches!(regex.delegate, EsRegexImpl::Regex { .. }));
+
+        let captures = regex.captures("Today is 2024-01-15");
+        assert!(captures.is_some());
+        let caps: Vec<_> = captures.unwrap().collect();
+        assert_eq!(caps.len(), 5); // full match + 4 groups
+        assert_eq!(caps[0], Some("2024-01-15")); // full match
+        assert_eq!(caps[1], None); // 'notmatched' -- this branch isn't taken
+        assert_eq!(caps[2], Some("2024")); // year
+        assert_eq!(caps[3], Some("01")); // month
+        assert_eq!(caps[4], Some("15")); // day
+    }
+
+    #[test]
+    fn captures_with_regress() {
+        let regex = EsRegex::new(r"(\w+)(?=baz)", "").unwrap();
+        assert!(matches!(regex.delegate, EsRegexImpl::Regress { .. }));
+
+        let captures = regex.captures("foobar");
+        assert!(captures.is_none());
+
+        let captures = regex.captures("foobaz");
+        assert!(captures.is_some());
+        let caps: Vec<_> = captures.unwrap().collect();
+        assert_eq!(caps.len(), 2); // full match + 1 group
+        assert_eq!(caps[0], Some("foo")); // full match
+        assert_eq!(caps[1], Some("foo")); // captured group
     }
 }

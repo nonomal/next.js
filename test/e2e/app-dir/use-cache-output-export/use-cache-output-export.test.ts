@@ -3,14 +3,16 @@ import { renderViaHTTP, startCleanStaticServer } from 'next-test-utils'
 import { join } from 'path'
 import { AddressInfo, Server } from 'net'
 
+// TODO(deploy-test-completion): Re-enable this suite in deploy mode.
+// It likely asserts local CLI or runtime output that deploy tests do not expose.
+// @force-gate !deploy
 describe('use-cache-output-export', () => {
   const { next, isNextStart } = nextTestSetup({
     files: __dirname,
-    skipDeployment: true,
     skipStart: process.env.NEXT_TEST_MODE !== 'dev',
   })
 
-  if (process.env.__NEXT_EXPERIMENTAL_PPR === 'true') {
+  if (process.env.__NEXT_CACHE_COMPONENTS === 'true') {
     return it.skip('for PPR', () => {
       // PPR is not compatible with `output: 'export'`.
     })

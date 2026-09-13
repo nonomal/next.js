@@ -1,17 +1,18 @@
-use std::{collections::BTreeMap, fmt::Display, ops::Deref, path::PathBuf};
+use std::{collections::BTreeMap, fmt::Display, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use turbo_rcstr::RcStr;
 use turbopack_cli_utils::issue::{LogOptions, format_issue};
 use turbopack_core::{
     issue::{IssueSeverity, IssueStage, PlainIssue, StyledString},
     source_pos::SourcePos,
+    update_instruction::UpdateInstruction,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ResourceIdentifier {
-    pub path: String,
-    pub headers: Option<BTreeMap<String, String>>,
+    pub path: RcStr,
+    pub headers: Option<BTreeMap<RcStr, RcStr>>,
 }
 
 impl Display for ResourceIdentifier {
@@ -77,7 +78,7 @@ impl<'a> ClientUpdateInstruction<'a> {
 
     pub fn partial(
         resource: &'a ResourceIdentifier,
-        instruction: &'a Value,
+        instruction: &'a UpdateInstruction,
         issues: &'a [Issue<'a>],
     ) -> Self {
         Self::new(
@@ -105,7 +106,7 @@ impl<'a> ClientUpdateInstruction<'a> {
 pub enum ClientUpdateInstructionType<'a> {
     Restart,
     NotFound,
-    Partial { instruction: &'a Value },
+    Partial { instruction: &'a UpdateInstruction },
     Issues,
 }
 
@@ -145,7 +146,6 @@ pub struct Issue<'a> {
     pub documentation_link: &'a str,
 
     pub source: Option<IssueSource<'a>>,
-    pub sub_issues: Vec<Issue<'a>>,
 
     pub formatted: String,
 }
@@ -170,7 +170,6 @@ impl<'a> From<&'a PlainIssue> for Issue<'a> {
             documentation_link: &plain.documentation_link,
             detail: plain.detail.as_ref(),
             source,
-            sub_issues: plain.sub_issues.iter().map(|p| p.deref().into()).collect(),
             // TODO(WEB-691) formatting the issue should be handled by the error overlay.
             // The browser could handle error formatting in a better way than the text only
             // formatting here
@@ -186,5 +185,52 @@ impl<'a> From<&'a PlainIssue> for Issue<'a> {
                 },
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+    use serde_json::json;
+    use turbo_rcstr::rcstr;
+    use turbo_tasks::{NonLocalValue, trace::TraceRawVcs};
+    use turbopack_core::update_instruction::UpdateInstruction;
+
+    use super::{ClientUpdateInstruction, ResourceIdentifier};
+
+    #[derive(Debug, PartialEq, Eq, Serialize, TraceRawVcs, NonLocalValue)]
+    struct TestInstruction(serde_json::Value);
+
+    #[test]
+    fn partial_instruction_wire_format_is_unchanged() {
+        let resource = ResourceIdentifier {
+            path: rcstr!("server/app.js"),
+            headers: None,
+        };
+        let instruction = UpdateInstruction::new(TestInstruction(json!({
+            "type": "ecmascriptMerged",
+            "chunks": {},
+        })));
+
+        assert_eq!(
+            serde_json::to_value(ClientUpdateInstruction::partial(
+                &resource,
+                &instruction,
+                &[],
+            ))
+            .unwrap(),
+            json!({
+                "resource": {
+                    "path": "server/app.js",
+                    "headers": null,
+                },
+                "type": "partial",
+                "instruction": {
+                    "type": "ecmascriptMerged",
+                    "chunks": {},
+                },
+                "issues": [],
+            })
+        );
     }
 }

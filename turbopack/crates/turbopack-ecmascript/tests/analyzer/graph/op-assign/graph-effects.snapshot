@@ -37,7 +37,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -71,10 +71,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -107,12 +107,10 @@
             ),
         ],
         span: 212..227,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "performance",
-        ),
+        var: "performance",
         ast_path: [
             Program(
                 Module,
@@ -140,7 +138,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -174,10 +172,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -216,7 +214,6 @@
             ),
         ],
         span: 212..223,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -257,7 +254,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -291,10 +288,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -372,7 +369,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -406,10 +403,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -445,7 +442,7 @@
             ),
         ],
         span: 257..292,
-        in_try: true,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -488,7 +485,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -522,10 +519,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -567,7 +564,7 @@
             ),
         ],
         span: 257..282,
-        in_try: true,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Member(
@@ -623,7 +620,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -657,10 +654,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -718,7 +715,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -752,10 +749,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -814,7 +811,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -848,10 +845,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -899,12 +896,10 @@
             ),
         ],
         span: 356..371,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "performance",
-        ),
+        var: "performance",
         ast_path: [
             Program(
                 Module,
@@ -932,7 +927,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -966,10 +961,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1023,7 +1018,6 @@
             ),
         ],
         span: 356..367,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -1064,7 +1058,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1098,10 +1092,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1171,7 +1165,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1201,71 +1195,7 @@
         ),
         kind: Ternary {
             then: EffectsBlock {
-                effects: [
-                    FreeVar {
-                        var: FreeVar(
-                            "undefined",
-                        ),
-                        ast_path: [
-                            Program(
-                                Module,
-                            ),
-                            Module(
-                                Body(
-                                    2,
-                                ),
-                            ),
-                            ModuleItem(
-                                ModuleDecl,
-                            ),
-                            ModuleDecl(
-                                ExportDecl,
-                            ),
-                            ExportDecl(
-                                Decl,
-                            ),
-                            Decl(
-                                Fn,
-                            ),
-                            FnDecl(
-                                Function,
-                            ),
-                            Function(
-                                Body,
-                            ),
-                            BlockStmt(
-                                Stmts(
-                                    0,
-                                ),
-                            ),
-                            Stmt(
-                                Decl,
-                            ),
-                            Decl(
-                                Var,
-                            ),
-                            VarDecl(
-                                Decls(
-                                    0,
-                                ),
-                            ),
-                            VarDeclarator(
-                                Init,
-                            ),
-                            Expr(
-                                Cond,
-                            ),
-                            CondExpr(
-                                Cons,
-                            ),
-                            Expr(
-                                Ident,
-                            ),
-                        ],
-                        span: 535..544,
-                        in_try: false,
-                    },
-                ],
+                effects: [],
                 range: Exact(
                     [
                         Program(
@@ -1294,7 +1224,7 @@
                         Function(
                             Body,
                         ),
-                        BlockStmt(
+                        FunctionBody(
                             Stmts(
                                 0,
                             ),
@@ -1352,7 +1282,7 @@
                         Function(
                             Body,
                         ),
-                        BlockStmt(
+                        FunctionBody(
                             Stmts(
                                 0,
                             ),
@@ -1408,7 +1338,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1435,7 +1365,6 @@
             ),
         ],
         span: 496..600,
-        in_try: false,
     },
     Member {
         obj: Variable(
@@ -1478,7 +1407,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -1494,7 +1423,7 @@
             ),
         ],
         span: 608..621,
-        in_try: false,
+        in_truthiness_context: true,
     },
     Unreachable {
         start_ast_path: [
@@ -1524,7 +1453,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),

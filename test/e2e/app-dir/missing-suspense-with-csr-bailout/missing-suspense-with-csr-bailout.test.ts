@@ -21,13 +21,21 @@ describe('missing-suspense-with-csr-bailout', () => {
     await next.clean()
   })
 
+  const isCacheComponentsEnabled =
+    process.env.__NEXT_CACHE_COMPONENTS === 'true'
+
   describe('useSearchParams', () => {
-    const message = `useSearchParams() should be wrapped in a suspense boundary at page "/".`
+    const message = isCacheComponentsEnabled
+      ? 'https://nextjs.org/docs/messages/blocking-prerender-client-hook'
+      : `useSearchParams() should be wrapped in a suspense boundary at page "/".`
 
     it('should fail build if useSearchParams is not wrapped in a suspense boundary', async () => {
       const { exitCode } = await next.build()
       expect(exitCode).toBe(1)
       expect(next.cliOutput).toContain(message)
+      expect(next.cliOutput).not.toContain(
+        'The server render could not complete because client rendering was requested outside a Suspense boundary'
+      )
       // Can show the trace where the searchParams hook is used
       // TODO: This path is different for Turbopack. Builds need to have sourcemaps support.
       if (!process.env.IS_TURBOPACK_TEST) {

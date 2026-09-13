@@ -1,6 +1,6 @@
-import fetch from 'node-fetch'
+// @ts-check
 
-async function main() {
+export async function main() {
   const releasesArray = await fetch(
     'https://api.github.com/repos/vercel/next.js/releases?per_page=100'
   ).then((r) => r.json())

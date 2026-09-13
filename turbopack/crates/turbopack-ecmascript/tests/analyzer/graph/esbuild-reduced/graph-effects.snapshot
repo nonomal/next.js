@@ -39,9 +39,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -79,7 +77,6 @@
             ),
         ],
         span: 12..19,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -128,9 +125,7 @@
         new: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -168,7 +163,6 @@
             ),
         ],
         span: 41..48,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -247,7 +241,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -269,12 +263,10 @@
             ),
         ],
         span: 296..329,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "platformKey",
-        ),
+        var: "platformKey",
         ast_path: [
             Program(
                 Script,
@@ -296,7 +288,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -330,7 +322,6 @@
             ),
         ],
         span: 317..328,
-        in_try: false,
     },
     Unreachable {
         start_ast_path: [
@@ -354,7 +345,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     4,
                 ),
@@ -363,6 +354,46 @@
                 Return,
             ),
         ],
+    },
+    DestructuredMember {
+        obj: Call(
+            2,
+            Variable(
+                (
+                    "pkgAndSubpathForCurrentPlatform",
+                    #2,
+                ),
+            ),
+            [],
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "pkg",
+                ),
+            ),
+        ),
+        span: 426..429,
+    },
+    DestructuredMember {
+        obj: Call(
+            2,
+            Variable(
+                (
+                    "pkgAndSubpathForCurrentPlatform",
+                    #2,
+                ),
+            ),
+            [],
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "subpath",
+                ),
+            ),
+        ),
+        span: 431..438,
     },
     Call {
         func: Variable(
@@ -393,7 +424,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -452,7 +483,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -494,12 +525,10 @@
             ),
         ],
         span: 515..530,
-        in_try: true,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -521,7 +550,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -569,7 +598,6 @@
             ),
         ],
         span: 515..522,
-        in_try: true,
     },
     MemberCall {
         obj: FreeVar(
@@ -631,7 +659,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     2,
                 ),
@@ -689,7 +717,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     3,
                 ),

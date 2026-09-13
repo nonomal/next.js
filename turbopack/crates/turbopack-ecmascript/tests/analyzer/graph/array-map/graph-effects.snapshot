@@ -64,7 +64,7 @@
             ),
         ],
         span: 53..87,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Array {
@@ -148,7 +148,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -304,7 +304,7 @@
             ),
         ],
         span: 135..169,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Array {
@@ -388,7 +388,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -544,7 +544,7 @@
             ),
         ],
         span: 219..253,
-        in_try: false,
+        in_truthiness_context: false,
     },
     MemberCall {
         obj: Array {
@@ -638,7 +638,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -663,12 +663,10 @@
                                 ),
                             ],
                             span: 281..296,
-                            in_try: false,
+                            in_truthiness_context: false,
                         },
                         FreeVar {
-                            var: FreeVar(
-                                "require",
-                            ),
+                            var: "require",
                             ast_path: [
                                 Program(
                                     Script,
@@ -712,7 +710,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -743,7 +741,6 @@
                                 ),
                             ],
                             span: 281..288,
-                            in_try: false,
                         },
                         MemberCall {
                             obj: FreeVar(
@@ -809,7 +806,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -872,7 +869,7 @@
                                 Function(
                                     Body,
                                 ),
-                                BlockStmt(
+                                FunctionBody(
                                     Stmts(
                                         0,
                                     ),
@@ -995,7 +992,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1020,12 +1017,10 @@
             ),
         ],
         span: 339..354,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Script,
@@ -1047,7 +1042,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1078,7 +1073,6 @@
             ),
         ],
         span: 339..346,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -1122,7 +1116,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -1163,7 +1157,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),

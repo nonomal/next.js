@@ -41,7 +41,7 @@
             ),
         ],
         span: 75..83,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -85,7 +85,7 @@
             ),
         ],
         span: 96..107,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -129,7 +129,7 @@
             ),
         ],
         span: 120..128,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -173,7 +173,7 @@
             ),
         ],
         span: 141..152,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -217,7 +217,7 @@
             ),
         ],
         span: 165..173,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -261,7 +261,7 @@
             ),
         ],
         span: 186..197,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -305,7 +305,7 @@
             ),
         ],
         span: 210..218,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -349,7 +349,7 @@
             ),
         ],
         span: 231..242,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -393,7 +393,7 @@
             ),
         ],
         span: 308..323,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -437,7 +437,7 @@
             ),
         ],
         span: 336..351,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -481,7 +481,7 @@
             ),
         ],
         span: 364..379,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -525,12 +525,138 @@
             ),
         ],
         span: 392..407,
-        in_try: false,
+        in_truthiness_context: false,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "a",
+                ),
+            ),
+        ),
+        span: 437..438,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "b",
+                ),
+            ),
+        ),
+        span: 444..447,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "c",
+                ),
+            ),
+        ),
+        span: 453..458,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "d",
+                ),
+            ),
+        ),
+        span: 464..465,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "a",
+                ),
+            ),
+        ),
+        span: 490..491,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "b",
+                ),
+            ),
+        ),
+        span: 493..494,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "c",
+                ),
+            ),
+        ),
+        span: 496..497,
+    },
+    DestructuredMember {
+        obj: Variable(
+            (
+                "object",
+                #2,
+            ),
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "d",
+                ),
+            ),
+        ),
+        span: 499..500,
     },
     FreeVar {
-        var: FreeVar(
-            "global",
-        ),
+        var: "global",
         ast_path: [
             Program(
                 Script,
@@ -573,7 +699,6 @@
             ),
         ],
         span: 548..554,
-        in_try: false,
     },
     Member {
         obj: Variable(
@@ -617,7 +742,7 @@
             ),
         ],
         span: 576..592,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -661,7 +786,7 @@
             ),
         ],
         span: 605..621,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -705,12 +830,10 @@
             ),
         ],
         span: 634..650,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "global",
-        ),
+        var: "global",
         ast_path: [
             Program(
                 Script,
@@ -762,12 +885,9 @@
             ),
         ],
         span: 678..684,
-        in_try: false,
     },
     FreeVar {
-        var: FreeVar(
-            "global",
-        ),
+        var: "global",
         ast_path: [
             Program(
                 Script,
@@ -819,7 +939,6 @@
             ),
         ],
         span: 697..703,
-        in_try: false,
     },
     Member {
         obj: Variable(
@@ -863,7 +982,7 @@
             ),
         ],
         span: 728..737,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -907,7 +1026,7 @@
             ),
         ],
         span: 750..759,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -951,7 +1070,7 @@
             ),
         ],
         span: 772..781,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -995,7 +1114,7 @@
             ),
         ],
         span: 794..803,
-        in_try: false,
+        in_truthiness_context: false,
     },
     Member {
         obj: Variable(
@@ -1039,6 +1158,6 @@
             ),
         ],
         span: 816..825,
-        in_try: false,
+        in_truthiness_context: false,
     },
 ]

@@ -1,4 +1,18 @@
 [
+    DestructuredMember {
+        obj: Argument(
+            24,
+            0,
+        ),
+        prop: Constant(
+            Str(
+                Atom(
+                    "variable",
+                ),
+            ),
+        ),
+        span: 27..35,
+    },
     Member {
         obj: FreeVar(
             "Math",
@@ -39,10 +53,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -73,12 +87,10 @@
             ),
         ],
         span: 50..61,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "Math",
-        ),
+        var: "Math",
         ast_path: [
             Program(
                 Script,
@@ -108,10 +120,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -148,7 +160,6 @@
             ),
         ],
         span: 50..54,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -191,10 +202,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -259,10 +270,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -287,12 +298,10 @@
             ),
         ],
         span: 273..287,
-        in_try: false,
+        in_truthiness_context: false,
     },
     FreeVar {
-        var: FreeVar(
-            "JSON",
-        ),
+        var: "JSON",
         ast_path: [
             Program(
                 Script,
@@ -322,10 +331,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -356,7 +365,6 @@
             ),
         ],
         span: 273..277,
-        in_try: false,
     },
     Conditional {
         condition: Binary(
@@ -409,10 +417,10 @@
                         ArrowExpr(
                             Body,
                         ),
-                        BlockStmtOrExpr(
-                            BlockStmt,
+                        ArrowFunctionBody(
+                            FunctionBody,
                         ),
-                        BlockStmt(
+                        FunctionBody(
                             Stmts(
                                 1,
                             ),
@@ -492,10 +500,10 @@
                         ArrowExpr(
                             Body,
                         ),
-                        BlockStmtOrExpr(
-                            BlockStmt,
+                        ArrowFunctionBody(
+                            FunctionBody,
                         ),
-                        BlockStmt(
+                        FunctionBody(
                             Stmts(
                                 1,
                             ),
@@ -573,10 +581,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -623,7 +631,6 @@
             ),
         ],
         span: 354..392,
-        in_try: false,
     },
     MemberCall {
         obj: FreeVar(
@@ -711,7 +718,7 @@
                             ),
                         ),
                     ],
-                    mutable: true,
+                    mutability: Mutable,
                 },
             ),
         ],
@@ -744,10 +751,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -796,10 +803,10 @@
             ArrowExpr(
                 Body,
             ),
-            BlockStmtOrExpr(
-                BlockStmt,
+            ArrowFunctionBody(
+                FunctionBody,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     1,
                 ),
@@ -838,7 +845,7 @@
                             ),
                         ),
                     ],
-                    mutable: true,
+                    mutability: Mutable,
                 },
             ),
         ],

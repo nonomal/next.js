@@ -1,21 +1,69 @@
+import { promises as fs } from 'fs'
+import { join } from 'path'
 import { nextTestSetup } from 'e2e-utils'
 import { retry } from 'next-test-utils'
 
-describe('app-dir - metadata-streaming', () => {
-  const { next } = nextTestSetup({
+const parallelMetadataBundleMarker = 'Expected at least one metadata branch'
+const legacyMetadataBundleMarker = '__nextError'
+
+async function directoryContains(
+  directory: string,
+  expected: string
+): Promise<boolean> {
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    const entryPath = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      if (await directoryContains(entryPath, expected)) {
+        return true
+      }
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.js') || entry.name.endsWith('.map')) &&
+      (await fs.readFile(entryPath, 'utf8')).includes(expected)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function runMetadataStreamingTests(parallelRouteMetadata: boolean) {
+  const { next, isNextDeploy } = nextTestSetup({
     files: __dirname,
+    nextConfig: {
+      experimental: {
+        parallelRouteMetadata,
+      },
+    },
+  })
+
+  // The deploy harness does not expose the emitted server bundle.
+  // @gate !deploy
+  it('should only bundle the selected metadata resolution implementation', async () => {
+    await next.fetch('/parallel-routes')
+
+    const serverDirectory = join(next.testDir, next.distDir, 'server')
+    const [hasParallelMetadata, hasLegacyMetadata] = await Promise.all([
+      directoryContains(serverDirectory, parallelMetadataBundleMarker),
+      directoryContains(serverDirectory, legacyMetadataBundleMarker),
+    ])
+
+    expect(hasParallelMetadata).toBe(parallelRouteMetadata)
+    expect(hasLegacyMetadata).toBe(!parallelRouteMetadata)
   })
 
   it('should only insert metadata once for parallel routes when slots match', async () => {
     const browser = await next.browser('/parallel-routes')
 
-    expect((await browser.elementsByCss('head title')).length).toBe(1)
-    expect((await browser.elementsByCss('body title')).length).toBe(0)
+    expect((await browser.elementsByCss('title')).length).toBe(1)
     expect(await browser.elementByCss('title').text()).toBe('parallel title')
 
     const $ = await next.render$('/parallel-routes')
     expect($('title').length).toBe(1)
-    expect($('head title').text()).toBe('parallel title')
+    // We can't ensure if it's inserted into head or body since it's a race condition,
+    // where sometimes the metadata can be suspended.
+    expect($('title').text()).toBe('parallel title')
 
     // validate behavior remains the same on client navigations
     await browser.elementByCss('[href="/parallel-routes/test-page"]').click()
@@ -49,16 +97,91 @@ describe('app-dir - metadata-streaming', () => {
     const browser = await next.browser('/parallel-routes-default')
 
     expect((await browser.elementsByCss('title')).length).toBe(1)
-    expect(await browser.elementByCss('body title').text()).toBe(
+    expect(await browser.elementByCss('title').text()).toBe(
       'parallel-routes-default layout title'
     )
 
     const $ = await next.render$('/parallel-routes-default')
     expect($('title').length).toBe(1)
-    expect($('body title').text()).toBe('parallel-routes-default layout title')
+    expect($('title').text()).toBe('parallel-routes-default layout title')
   })
 
-  it('should change metadata when navigating between two pages under a slot when children is not rendered', async () => {
+  if (!parallelRouteMetadata) return
+
+  it('should prefer children when it defines metadata', async () => {
+    const $ = await next.render$('/parallel-routes/metadata-conflict')
+    expect($('title').text()).toBe('children title')
+
+    const browser = await next.browser('/parallel-routes/metadata-conflict')
+    expect(await browser.elementByCss('title').text()).toBe('children title')
+    expect((await browser.elementsByCss('title')).length).toBe(1)
+  })
+
+  it('should prefer a named slot when children does not define metadata', async () => {
+    const $ = await next.render$('/parallel-routes/metadata-slot-only')
+    const icons = $('link[rel="icon"]')
+      .map((_, element) => $(element).attr('href'))
+      .get()
+
+    expect(icons).toContainEqual(
+      expect.stringContaining('/parallel-routes/metadata-slot-only/icon')
+    )
+  })
+
+  it('should ignore metadata errors from unrendered slots', async () => {
+    const outputIndex = next.cliOutput.length
+    const $ = await next.render$('/conditional-slot')
+
+    expect($('title').text()).toBe('conditional children title')
+    expect($('#conditional-children').text()).toBe('conditional children')
+    expect($('.next-error-h1').length).toBe(0)
+
+    if (!isNextDeploy) {
+      await retry(() => {
+        const output = next.cliOutput.slice(outputIndex)
+        expect(output).toContain('unrendered slot metadata error')
+        expect(output).toContain('unrendered slot image metadata error')
+        expect(output).toContain('unrendered slot viewport error')
+        expect(output).not.toContain('Array.map (<anonymous>)')
+        expect(output).not.toContain('Function.all (<anonymous>)')
+      })
+    }
+  })
+
+  it('should start generators in every branch before their parent resolves', async () => {
+    const $ = await next.render$('/eager-generation')
+
+    expect($('title').text()).toBe('eager children title')
+    expect($('meta[name="description"]').attr('content')).toBe(
+      'parallel generators started eagerly'
+    )
+    expect($('meta[name="color-scheme"]').attr('content')).toBe('dark')
+    expect($('#eager-children').text()).toBe('eager children')
+    expect($('#eager-slot').text()).toBe('eager slot')
+  })
+
+  it('should replay a viewport error without waiting for metadata in the same outlet', async () => {
+    const browser = await next.browser('/outlet-error-start')
+    await browser.elementByCss('#independent-outlet-errors-link').click()
+
+    await retry(async () => {
+      expect(await browser.elementByCss('#outlet-viewport-error').text()).toBe(
+        'viewport error reached boundary'
+      )
+    })
+  })
+
+  it('should prefer the deeper named slot metadata', async () => {
+    const $ = await next.render$('/metadata-selection/deepest')
+    expect($('title').text()).toBe('foo deeper title')
+  })
+
+  it('should use lexical slot order to break depth ties', async () => {
+    const $ = await next.render$('/metadata-selection/lexical')
+    expect($('title').text()).toBe('bar lexical title')
+  })
+
+  it('should prefer a real named slot over an implicit children fallback', async () => {
     // first page is /parallel-routes-no-children/first,
     // second page is /parallel-routes-no-children/second
     // navigating between them should change the title metadata
@@ -82,4 +205,11 @@ describe('app-dir - metadata-streaming', () => {
       'second page - @bar'
     )
   })
-})
+}
+
+describe.each([false, true])(
+  'app-dir - metadata-streaming (parallelRouteMetadata: %s)',
+  (parallelRouteMetadata) => {
+    runMetadataStreamingTests(parallelRouteMetadata)
+  }
+)

@@ -1,8 +1,6 @@
 [
     FreeVar {
-        var: FreeVar(
-            "require",
-        ),
+        var: "require",
         ast_path: [
             Program(
                 Module,
@@ -30,7 +28,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),
@@ -55,7 +53,6 @@
             ),
         ],
         span: 54..61,
-        in_try: false,
     },
     Call {
         func: FreeVar(
@@ -98,7 +95,7 @@
             Function(
                 Body,
             ),
-            BlockStmt(
+            FunctionBody(
                 Stmts(
                     0,
                 ),

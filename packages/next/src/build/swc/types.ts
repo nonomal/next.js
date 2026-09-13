@@ -4,18 +4,47 @@ import type {
   ExternalObject,
   RefCell,
   NapiTurboEngineOptions,
+  NapiSourceDiagnostic,
+  NapiProjectOptions,
+  NapiPartialProjectOptions,
+  NapiCodeFrameOptions,
+  NapiCodeFrameLocation,
+  TraceServerHandle,
+  TraceQueryOptions,
+  TraceQueryResult,
+  MemoryEvictionMode,
+  ServerHmrVersion as NativeServerHmrVersion,
 } from './generated-native'
 
+export type { TraceServerHandle, TraceQueryOptions, TraceQueryResult }
+
 export type { NapiTurboEngineOptions as TurboEngineOptions }
+
+export type { MemoryEvictionMode }
+
+export type Lockfile = { __napiType: 'Lockfile' }
+
+export interface TurbopackProjectCallbacks {
+  onBeforeDeferredEntries?: () => Promise<void>
+}
 
 export interface Binding {
   isWasm: boolean
   turbo: {
     createProject(
       options: ProjectOptions,
-      turboEngineOptions?: NapiTurboEngineOptions
+      turboEngineOptions: NapiTurboEngineOptions,
+      callbacks?: TurbopackProjectCallbacks
     ): Promise<Project>
-    startTurbopackTraceServer(traceFilePath: string): void
+    startTurbopackTraceServerHandle(
+      traceFilePath: string,
+      port: number | undefined
+    ): TraceServerHandle
+    queryTraceSpans(
+      handle: TraceServerHandle,
+      options: TraceQueryOptions
+    ): TraceQueryResult
+    databaseCompact(path: string, nextVersion: string): Promise<void>
 
     nextBuild?: any
   }
@@ -30,19 +59,50 @@ export interface Binding {
   parse(src: string, options: any): Promise<string>
 
   getTargetTriple(): string | undefined
+  turbopackCacheVersion(nextVersion: string): string | undefined
 
   initCustomTraceSubscriber?(traceOutFilePath?: string): ExternalObject<RefCell>
   teardownTraceSubscriber?(guardExternal: ExternalObject<RefCell>): void
   css: {
     lightning: {
-      transform(transformOptions: any): Promise<any>
-      transformStyleAttr(transformAttrOptions: any): Promise<any>
+      transform(transformOptions: any): any
+      transformStyleAttr(transformAttrOptions: any): any
+      featureNamesToMask(names: string[]): number
     }
   }
 
   reactCompiler: {
     isReactCompilerRequired(filename: string): Promise<boolean>
   }
+
+  rspack: {
+    getModuleNamedExports(resourcePath: string): Promise<string[]>
+    warnForEdgeRuntime(
+      source: string,
+      isProduction: boolean
+    ): Promise<NapiSourceDiagnostic[]>
+  }
+  expandNextJsTemplate(
+    content: Buffer,
+    templatePath: string,
+    nextPackageDirPath: string,
+    replacements: Record<`VAR_${string}`, string>,
+    injections: Record<string, string>,
+    imports: Record<string, string | null>
+  ): string
+
+  lockfileTryAcquire(
+    path: string,
+    content?: string | null
+  ): Promise<Lockfile | null>
+  lockfileTryAcquireSync(path: string, content?: string | null): Lockfile | null
+  lockfileUnlock(lockfile: Lockfile): Promise<void>
+  lockfileUnlockSync(lockfile: Lockfile): void
+  codeFrameColumns(
+    source: string,
+    location: NapiCodeFrameLocation,
+    options?: NapiCodeFrameOptions
+  ): string | undefined
 }
 
 export type StyledString =
@@ -67,6 +127,30 @@ export type StyledString =
       value: StyledString[]
     }
 
+/** 0-indexed line and column position within a source file. */
+export interface SourcePosition {
+  line: number
+  column: number
+}
+
+export interface IssueSource {
+  source: {
+    ident: string
+    filePath: string
+  }
+  range?: {
+    start: SourcePosition
+    end: SourcePosition
+  }
+}
+
+export interface AdditionalIssueSource {
+  description: string
+  source: IssueSource
+  /** Pre-rendered code frame from the Rust NAPI layer */
+  codeFrame?: string
+}
+
 export interface Issue {
   severity: string
   stage: string
@@ -74,43 +158,33 @@ export interface Issue {
   title: StyledString
   description?: StyledString
   detail?: StyledString
-  source?: {
-    source: {
-      ident: string
-      content?: string
-    }
-    range?: {
-      start: {
-        // 0-indexed
-        line: number
-        // 0-indexed
-        column: number
-      }
-      end: {
-        // 0-indexed
-        line: number
-        // 0-indexed
-        column: number
-      }
-    }
-  }
+  source?: IssueSource
+  additionalSources?: AdditionalIssueSource[]
   documentationLink: string
-  subIssues: Issue[]
+  importTraces?: PlainTraceItem[][]
+  /** Pre-rendered code frame from the Rust NAPI layer */
+  codeFrame?: string
+}
+export interface PlainTraceItem {
+  fsName: string
+  path: string
+  rootPath: string
+  layer?: string
 }
 
-export interface Diagnostics {
-  category: string
-  name: string
-  payload: unknown
+export interface BuildFeatureUsage {
+  featureName: string
+  invocationCount: number
 }
 
-export type TurbopackResult<T = {}> = T & {
+export type TurbopackResult<T> = {
+  value: T
   issues: Issue[]
-  diagnostics: Diagnostics[]
 }
 
 export interface Middleware {
   endpoint: Endpoint
+  isProxy: boolean
 }
 
 export interface Instrumentation {
@@ -156,14 +230,60 @@ interface PartialUpdate extends BaseUpdate {
 
 export type Update = IssuesUpdate | PartialUpdate
 
-export interface HmrIdentifiers {
-  identifiers: string[]
+/**
+ * IMPORTANT: This type is duplicated in:
+ * turbopack/crates/turbopack-ecmascript-runtime/js/src/nodejs/hmr-types.d.ts
+ *
+ * The runtime file cannot import from this ES module without triggering module semantics,
+ * so we maintain a copy there. Please keep both definitions in sync.
+ */
+export interface NodeJsEcmascriptMergedUpdate {
+  type: 'EcmascriptMergedUpdate'
+  entries?: Record<
+    string,
+    { code: string; url: string; map?: string | undefined }
+  >
+  chunks?: Record<
+    string,
+    | { type: 'added' | 'deleted'; modules?: string[] }
+    | { type: 'partial'; added?: string[]; deleted?: string[] }
+  >
 }
 
-/** @see https://github.com/vercel/next.js/blob/415cd74b9a220b6f50da64da68c13043e9b02995/packages/next-swc/crates/napi/src/next_api/project.rs#L824-L833 */
+export interface NodeJsChunkListUpdate {
+  type: 'ChunkListUpdate'
+  merged?: NodeJsEcmascriptMergedUpdate[]
+  chunks?: Record<string, { type: 'added' | 'deleted' | 'total' | 'partial' }>
+}
+
+/** In-process update; unlike wire updates, it has no resource or issues. */
+export interface NodeJsPartialHmrUpdate {
+  type: 'partial'
+  instruction: NodeJsEcmascriptMergedUpdate | NodeJsChunkListUpdate
+}
+
+/** Opaque baseline for the next pull. */
+export type ServerHmrVersion = ExternalObject<NativeServerHmrVersion>
+
+/** Restores the union flattened by napi. */
+export type ServerHmrUpdate =
+  | { kind: 'none'; version?: ServerHmrVersion }
+  | { kind: 'restart'; version: ServerHmrVersion }
+  | {
+      kind: 'partial'
+      version: ServerHmrVersion
+      instruction: NodeJsPartialHmrUpdate['instruction']
+    }
+
+export interface HmrChunkNames {
+  /** Relative paths to output chunks that can receive HMR updates (e.g., "server/chunks/ssr/..._.js") */
+  chunkNames: string[]
+}
+
+/** @see https://github.com/vercel/next.js/blob/415cd74b9a220b6f50da64da68c13043e9b02995/crates/next-napi-bindings/src/next_api/project.rs#L824-L833 */
 export interface TurbopackStackFrame {
   isServer: boolean
-  isInternal?: boolean
+  isIgnored?: boolean
   file: string
   originalFile?: string
   /** 1-indexed, unlike source map tokens */
@@ -186,6 +306,7 @@ export type CompilationEvent = {
   typeName: string
   message: string
   severity: string
+  eventJson: string
   eventData: any
 }
 
@@ -197,16 +318,42 @@ export interface UpdateInfo {
 export interface Project {
   update(options: Partial<ProjectOptions>): Promise<void>
 
+  activateLazyChunk(chunkPath: string): Promise<boolean>
+
+  writeAnalyzeData(appDirOnly: boolean): Promise<TurbopackResult<void>>
+
+  getAllCompilationIssues(): Promise<TurbopackResult<void>>
+
   writeAllEntrypointsToDisk(
     appDirOnly: boolean
-  ): Promise<TurbopackResult<RawEntrypoints>>
+  ): Promise<TurbopackResult<Partial<RawEntrypoints>>>
 
-  entrypointsSubscribe(): AsyncIterableIterator<TurbopackResult<RawEntrypoints>>
+  /**
+   * Returns the build-feature-usage telemetry summary — `(featureName,
+   * invocationCount)` pairs reported to the Next.js telemetry service.
+   *
+   * **Must only be called in a `next build` (production) context**, once at the
+   * end of the build, after `writeAllEntrypointsToDisk`. The Rust implementation
+   * walks the whole-app module graph and will error if invoked from a
+   * development project, because dev builds do not produce a complete graph.
+   */
+  featureUsage(): Promise<BuildFeatureUsage[]>
 
-  hmrEvents(identifier: string): AsyncIterableIterator<TurbopackResult<Update>>
+  entrypointsSubscribe(): AsyncIterableIterator<
+    TurbopackResult<RawEntrypoints | {}>
+  >
 
-  hmrIdentifiersSubscribe(): AsyncIterableIterator<
-    TurbopackResult<HmrIdentifiers>
+  getServerHmrUpdate(
+    from: ServerHmrVersion | undefined,
+    entryPaths: string[]
+  ): Promise<TurbopackResult<ServerHmrUpdate>>
+
+  clientHmrEvents(
+    identifier: string
+  ): AsyncIterableIterator<TurbopackResult<Update>>
+
+  clientHmrChunkNamesSubscribe(): AsyncIterableIterator<
+    TurbopackResult<HmrChunkNames>
   >
 
   getSourceForAsset(filePath: string): Promise<string | null>
@@ -221,11 +368,13 @@ export interface Project {
 
   updateInfoSubscribe(
     aggregationMs: number
-  ): AsyncIterableIterator<TurbopackResult<UpdateMessage>>
+  ): AsyncIterableIterator<UpdateMessage>
 
-  compilationEventsSubscribe(): AsyncIterableIterator<
-    TurbopackResult<CompilationEvent>
-  >
+  compilationEventsSubscribe(
+    eventTypes?: string[]
+  ): AsyncIterableIterator<CompilationEvent>
+
+  invalidateFileSystemCache(): Promise<void>
 
   shutdown(): Promise<void>
 
@@ -241,12 +390,13 @@ export type Route =
       pages: {
         originalName: string
         htmlEndpoint: Endpoint
-        rscEndpoint: Endpoint
+        rscHmrEndpoint: Endpoint
       }[]
     }
   | {
       type: 'app-route'
       originalName: string
+      hasActionManifest: boolean
       endpoint: Endpoint
     }
   | {
@@ -268,7 +418,7 @@ export interface Endpoint {
    * After clientChanged() has been awaited it will listen to changes.
    * The async iterator will yield for each change.
    */
-  clientChanged(): Promise<AsyncIterableIterator<TurbopackResult>>
+  clientChanged(): Promise<AsyncIterableIterator<TurbopackResult<void>>>
 
   /**
    * Listen to server-side changes to the endpoint.
@@ -277,7 +427,7 @@ export interface Endpoint {
    */
   serverChanged(
     includeIssues: boolean
-  ): Promise<AsyncIterableIterator<TurbopackResult>>
+  ): Promise<AsyncIterableIterator<TurbopackResult<void>>>
 }
 
 interface EndpointConfig {
@@ -306,6 +456,8 @@ export type WrittenEndpoint =
       type: 'nodejs'
       /** The entry path for the endpoint. */
       entryPath: string
+      /** Server HMR entry chunk lists owned by this endpoint. */
+      serverHmrEntryPaths: string[]
       /** All client paths that have been written for the endpoint. */
       clientPaths: string[]
       /** All server paths that have been written for the endpoint. */
@@ -314,6 +466,7 @@ export type WrittenEndpoint =
     }
   | {
       type: 'edge'
+      serverHmrEntryPaths: []
       /** All client paths that have been written for the endpoint. */
       clientPaths: string[]
       /** All server paths that have been written for the endpoint. */
@@ -322,99 +475,48 @@ export type WrittenEndpoint =
     }
   | {
       type: 'none'
+      serverHmrEntryPaths: []
       clientPaths: []
       serverPaths: []
       config: EndpointConfig
     }
 
-export interface ProjectOptions {
-  /**
-   * A root path from which all files must be nested under. Trying to access
-   * a file outside this root will fail. Think of this as a chroot.
-   */
-  rootPath: string
-
-  /**
-   * A path inside the root_path which contains the app/pages directories.
-   */
-  projectPath: string
-
-  /**
-   * The path to the .next directory.
-   */
-  distDir: string
-
+export interface ProjectOptions
+  extends Omit<NapiProjectOptions, 'nextConfig' | 'env'> {
   /**
    * The next.config.js contents.
    */
   nextConfig: NextConfigComplete
 
   /**
-   * Jsconfig, or tsconfig contents.
-   *
-   * Next.js implicitly requires to read it to support few options
-   * https://nextjs.org/docs/architecture/nextjs-compiler#legacy-decorators
-   * https://nextjs.org/docs/architecture/nextjs-compiler#importsource
+   * A map of environment variables to use when compiling code.
    */
-  jsConfig: {
-    compilerOptions: object
-  }
+  env: Record<string, string>
+}
+
+export interface PartialProjectOptions
+  extends Omit<NapiPartialProjectOptions, 'nextConfig' | 'env'> {
+  rootPath: NapiProjectOptions['rootPath']
+  projectPath: NapiProjectOptions['projectPath']
+  /**
+   * The next.config.js contents.
+   */
+  nextConfig?: NextConfigComplete
 
   /**
    * A map of environment variables to use when compiling code.
    */
-  env: Record<string, string>
-
-  defineEnv: DefineEnv
-
-  /**
-   * Whether to watch the filesystem for file changes.
-   */
-  watch: {
-    enable: boolean
-    pollIntervalMs?: number
-  }
-
-  /**
-   * The mode in which Next.js is running.
-   */
-  dev: boolean
-
-  /**
-   * The server actions encryption key.
-   */
-  encryptionKey: string
-
-  /**
-   * The build id.
-   */
-  buildId: string
-
-  /**
-   * Options for draft mode.
-   */
-  previewProps: __ApiPreviewProps
-
-  /**
-   * The browserslist query to use for targeting browsers.
-   */
-  browserslistQuery: string
-
-  /**
-   * When the code is minified, this opts out of the default mangling of local
-   * names for variables, functions etc., which can be useful for
-   * debugging/profiling purposes.
-   */
-  noMangling: boolean
+  env?: Record<string, string>
 }
 
 export interface DefineEnv {
-  client: RustifiedEnv
-  edge: RustifiedEnv
-  nodejs: RustifiedEnv
+  client: RustifiedOptionalEnv
+  edge: RustifiedOptionalEnv
+  nodejs: RustifiedOptionalEnv
 }
 
 export type RustifiedEnv = { name: string; value: string }[]
+export type RustifiedOptionalEnv = { name: string; value: string | undefined }[]
 
 export interface GlobalEntrypoints {
   app: Endpoint | undefined
@@ -439,10 +541,11 @@ export type AppRoute =
   | {
       type: 'app-page'
       htmlEndpoint: Endpoint
-      rscEndpoint: Endpoint
+      rscHmrEndpoint: Endpoint
     }
   | {
       type: 'app-route'
+      hasActionManifest: boolean
       endpoint: Endpoint
     }
 

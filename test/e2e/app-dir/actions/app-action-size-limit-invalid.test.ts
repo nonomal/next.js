@@ -50,7 +50,6 @@ describe('app-dir action size limit invalid config', () => {
       module.exports = {
         experimental: {
           serverActions: { bodySizeLimit: -3000 },
-          nodeMiddleware: true
         },
       }
       `
@@ -69,7 +68,6 @@ describe('app-dir action size limit invalid config', () => {
       module.exports = {
         experimental: {
           serverActions: { bodySizeLimit: 'testmb' },
-          nodeMiddleware: true
         },
       }
       `
@@ -88,7 +86,6 @@ describe('app-dir action size limit invalid config', () => {
       module.exports = {
         experimental: {
           serverActions: { bodySizeLimit: '-3000mb' },
-          nodeMiddleware: true
         },
       }
       `
@@ -227,6 +224,39 @@ describe('app-dir action size limit invalid config', () => {
       const [, actionResponse] = await requestTracker.captureResponse(
         () => browser.elementByCss('#size-3mb').click(),
         { request: { method: 'POST', pathname: '/form' } }
+      )
+      expect(actionResponse.status()).toBe(500) // TODO: 413?
+      expect(
+        await actionResponse.request().headerValue('content-type')
+      ).toStartWith('multipart/form-data')
+
+      // The error should have been returned to the client and thrown, triggering the nearest error boundary.
+      expect(await browser.elementByCss('#error').text()).toBe(
+        'Something went wrong!'
+      )
+
+      if (!isNextDeploy) {
+        await retry(() => {
+          expect(logs).toContainEqual(
+            expect.stringContaining('Error: Body exceeded 2mb limit')
+          )
+          expect(logs).toContainEqual(
+            expect.stringContaining(
+              'To configure the body size limit for Server Actions, see'
+            )
+          )
+        })
+        expect(logs).not.toContainEqual(expect.stringMatching(/^size = /))
+      }
+    })
+
+    it('should error for requests that exceed the size limit in Edge runtime', async () => {
+      const browser = await next.browser('/form-edge')
+      const requestTracker = createRequestTracker(browser)
+
+      const [, actionResponse] = await requestTracker.captureResponse(
+        () => browser.elementByCss('#size-3mb').click(),
+        { request: { method: 'POST', pathname: '/form-edge' } }
       )
       expect(actionResponse.status()).toBe(500) // TODO: 413?
       expect(

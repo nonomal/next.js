@@ -20,7 +20,7 @@ export async function createIncrementalCache({
   requestHeaders,
 }: {
   cacheHandler?: string
-  cacheMaxMemorySize?: number
+  cacheMaxMemorySize: number
   fetchCacheKeyPrefix?: string
   distDir: string
   dir: string
@@ -38,7 +38,7 @@ export async function createIncrementalCache({
     )
   }
 
-  if (cacheHandlers && initializeCacheHandlers()) {
+  if (cacheHandlers && initializeCacheHandlers(cacheMaxMemorySize)) {
     for (const [kind, handler] of Object.entries(cacheHandlers)) {
       if (!handler) continue
 
@@ -53,23 +53,25 @@ export async function createIncrementalCache({
     }
   }
 
+  let previewProps = {
+    previewModeEncryptionKey: '',
+    previewModeId: '',
+    previewModeSigningKey: '',
+  }
   const incrementalCache = new IncrementalCache({
     dev: false,
     requestHeaders: requestHeaders || {},
     flushToDisk,
     maxMemoryCacheSize: cacheMaxMemorySize,
     fetchCacheKeyPrefix,
-    getPrerenderManifest: () => ({
+    previewProps,
+    prerenderManifest: {
       version: 4,
       routes: {},
       dynamicRoutes: {},
-      preview: {
-        previewModeEncryptionKey: '',
-        previewModeId: '',
-        previewModeSigningKey: '',
-      },
       notFoundRoutes: [],
-    }),
+      preview: previewProps,
+    },
     fs: nodeFs,
     serverDistDir: path.join(distDir, 'server'),
     CurCacheHandler: CacheHandler,
